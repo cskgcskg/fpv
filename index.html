@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trippy Plains v4 — FPV Freestyle</title>
+<title>Trippy Plains v8 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;}
@@ -48,7 +48,15 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 .row{display:flex;gap:12px;}
 .btn{font-family:inherit;font-size:13px;letter-spacing:1px;padding:12px 28px;border-radius:6px;border:1px solid #3fe08a;background:rgba(63,224,138,.08);color:#bff;cursor:pointer;}
 .btn:hover{background:rgba(63,224,138,.2);}
+.btn.sec{border-color:#7fb6ff;background:rgba(127,182,255,.08);color:#cfe6ff;}
+.btn.sec:hover{background:rgba(127,182,255,.2);}
 .hint{margin-top:22px;color:#688;font-size:11px;line-height:1.8;text-align:center;}
+#cal{position:fixed;inset:0;z-index:40;background:rgba(6,10,14,.94);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;}
+#cal.on{display:flex;}
+#cal .ct{font-size:11px;letter-spacing:4px;color:#7fb6ff;margin-bottom:18px;}
+#calMsg{font-size:22px;line-height:1.5;color:#eaf4ff;max-width:560px;min-height:80px;}
+#cal .csmall{margin-top:24px;color:#7a93a8;font-size:12px;}
+#set .btn{font-size:11px;padding:7px 10px;letter-spacing:0.5px;margin:2px 0;}
 </style></head>
 <body>
 <canvas id="c"></canvas>
@@ -82,23 +90,39 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div class="st">SNAPPINESS</div>
   <div class="sr"><span>Rate °/s</span><input type="range" id="tRate" min="200" max="900" step="10"><span class="sv" id="vRate"></span></div>
   <div class="sr"><span>Snap</span><input type="range" id="tSnap" min="20000" max="140000" step="2000"><span class="sv" id="vSnap"></span></div>
+  <div class="st">FLIGHT · PHYSICS</div>
+  <div class="sr"><span>Power (TWR)</span><input type="range" id="tTwr" min="3" max="14" step="0.5"><span class="sv" id="vTwr"></span></div>
+  <div class="sr"><span>Mass / inertia g</span><input type="range" id="tMass" min="200" max="1400" step="10"><span class="sv" id="vMass"></span></div>
+  <div class="sr"><span>Throttle resp ms</span><input type="range" id="tThr" min="8" max="80" step="2"><span class="sv" id="vThr"></span></div>
+  <div class="sr"><span>Gravity m/s²</span><input type="range" id="tGrav" min="5" max="16" step="0.2"><span class="sv" id="vGrav"></span></div>
+  <div class="sr"><span>Expo</span><input type="range" id="tExpo" min="0" max="70" step="5"><span class="sv" id="vExpo"></span></div>
   <div class="st">RATE PID</div>
   <div class="sr"><span>P</span><input type="range" id="tP" min="60" max="400" step="5"><span class="sv" id="vP"></span></div>
   <div class="sr"><span>I</span><input type="range" id="tI" min="0" max="200" step="5"><span class="sv" id="vI"></span></div>
   <div class="sr"><span>D</span><input type="range" id="tD" min="0" max="300" step="5"><span class="sv" id="vD"></span></div>
   <div class="st">CAMERA</div>
   <div class="sr"><span>Cam angle °</span><input type="range" id="tCam" min="0" max="55" step="1"><span class="sv" id="vCam"></span></div>
+  <div class="st">SOUND</div>
+  <div class="sr"><span>Motor volume</span><input type="range" id="tVol" min="0" max="100" step="5"><span class="sv" id="vVol"></span></div>
   <div class="st">SCENE</div>
   <div class="sr"><span>Floor / bg</span><input type="range" id="tFloor" min="30" max="160" step="5"><span class="sv" id="vFloor"></span></div>
+  <div class="st">CONTROLLER</div>
+  <div id="tCalWrap" style="display:flex;flex-direction:column;"><button class="btn sec" id="tCal">CALIBRATE STICKS</button></div>
   <div class="small">[ / ] adjust cam · TAB to close</div>
 </div>
 <div id="legend"><b>TAB</b> controls &amp; tune</div>
 <div id="flash"></div>
+<div id="cal">
+  <div class="ct">DJI / GAMEPAD CALIBRATION</div>
+  <div id="calMsg"></div>
+  <button class="btn sec" id="calCancel" style="margin-top:26px;">CANCEL</button>
+  <div class="csmall">Move the requested stick to its full extreme, then let it center.</div>
+</div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v4 · TAB = CONTROLS &amp; TUNE PANEL</div>
+  <div class="sub">FPV FREESTYLE · v8 · 2 PORTALS · STICK CALIBRATION</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
-  <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button></div>
+  <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-5 drone &middot; M acro/angle<br>Default quad: THE ZONE (5" freestyle). Open directly or via a local server.</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -186,6 +210,9 @@ const $=id=>document.getElementById(id);
 // state.js — mutable shared state (held in objects so it can be changed across modules)
 const Env = { GRAV: 9.81 };          // adjustable gravity
 const COLLIDERS = [];                // solid-object AABB colliders (filled by World)
+const HOLES = [ {x:60, z:-60, r:30}, {x:450, z:450, r:38} ];  // gaps in the floor → underground (Inception) level
+const UNDER_FLOOR = -180;            // catch-floor at the bottom of the underground level
+function overHole(x,z){ for(const h of HOLES){ const dx=x-h.x, dz=z-h.z, ir=h.r-2; if(dx*dx+dz*dz < ir*ir) return true; } return false; }
 // physics — Battery, Wind, Quad (engine-agnostic flight model)
 
 // Betaflight "ACTUAL" rates (deg/s) — matches The Zone's rate model.
@@ -251,7 +278,7 @@ class Quad {
   reset(){
     this.pos=new THREE.Vector3(0,0.4,0); this.vel=new THREE.Vector3();
     this.quat=new THREE.Quaternion(); this.angV=new THREE.Vector3();
-    this.spool=0; this.armed=false; this.onGround=true; this.crashed=false;
+    this.spool=0; this.armed=false; this.onGround=true; this.crashed=false; this.below=false;
     this._stun=0; this._acc=0; this.ft=0; this._pwPhase=0;
     this._iterm={x:0,y:0,z:0}; this._prevAngV={x:0,y:0,z:0};
     this.alt=0.12; this.spd=0; this.gndSpd=0; this.vario=0; this.motor=0;
@@ -277,8 +304,11 @@ class Quad {
       this.quat.slerp(this._idq, Math.min((this.onGround?8:1.2)*dt,1));
       this.angV.multiplyScalar(1-Math.min(8*dt,1));
       this.spool=0;
-      if(this.pos.y<0.4){ this.pos.y=0.4; this.onGround=true; if(this.vel.y<0)this.vel.y=0;
-        this.vel.x*=0.85; this.vel.z*=0.85; } else this.onGround=false;
+      if(overHole(this.pos.x,this.pos.z)){ this.below=this.pos.y<0; this.onGround=false; }
+      else if(!this.below){ if(this.pos.y<0.4){ this.pos.y=0.4; this.onGround=true; if(this.vel.y<0)this.vel.y=0; this.vel.x*=0.85; this.vel.z*=0.85; } else this.onGround=false; }
+      else if(this.pos.y>-0.4){ this.pos.y=-0.4; if(this.vel.y>0)this.vel.y=0; this.onGround=false; }
+      else if(this.pos.y<UNDER_FLOOR){ this.pos.y=UNDER_FLOOR; this.onGround=true; if(this.vel.y<0)this.vel.y=0; this.vel.x*=0.85; this.vel.z*=0.85; }
+      else this.onGround=false;
       this._tele(); return;
     }
     this.ft+=dt;
@@ -380,21 +410,29 @@ class Quad {
     q.z+=0.5*( ww*w.z + x*w.y - y*w.x)*dt;
     q.w+=0.5*(-x*w.x - y*w.y - z*w.z)*dt;
     q.normalize();
-    // ── ground ──
-    if(this.pos.y<0.4){
-      this.pos.y=0.4;
-      const iv=-this.vel.y, hv=Math.hypot(this.vel.x,this.vel.z);
-      if(iv>7 || (iv>4&&hv>6)){          // crash
-        this.crashed=true; this._stun=0.6;
-        const tw=Math.min(12,2+(iv+hv)*0.5);
-        this.angV.set((Math.random()-.5)*tw,(Math.random()-.5)*tw*.4,(Math.random()-.5)*tw);
-        this.vel.multiplyScalar(0.1);
-      } else {                            // bounce / settle
-        this.vel.y=Math.max(0,this.vel.y*-0.12);
-        this.vel.x*=0.86; this.vel.z*=0.86;
-      }
-      this.onGround=true;
-    } else this.onGround=false;
+    // ── floor / ceiling — the hole connects the surface to the mirrored underground ──
+    if(overHole(this.pos.x,this.pos.z)){          // free vertical passage through the hole
+      this.below = this.pos.y < 0; this.onGround=false;
+    } else if(!this.below){                        // UPPER side — solid floor at 0.4
+      if(this.pos.y<0.4){
+        this.pos.y=0.4;
+        const iv=-this.vel.y, hv=Math.hypot(this.vel.x,this.vel.z);
+        if(iv>7 || (iv>4&&hv>6)){          // crash
+          this.crashed=true; this._stun=0.6;
+          const tw=Math.min(12,2+(iv+hv)*0.5);
+          this.angV.set((Math.random()-.5)*tw,(Math.random()-.5)*tw*.4,(Math.random()-.5)*tw);
+          this.vel.multiplyScalar(0.1);
+        } else {                            // bounce / settle
+          this.vel.y=Math.max(0,this.vel.y*-0.12);
+          this.vel.x*=0.86; this.vel.z*=0.86;
+        }
+        this.onGround=true;
+      } else this.onGround=false;
+    } else {                                       // UNDERGROUND — floor is now a ceiling, catch-floor far below
+      if(this.pos.y>-0.4){ this.pos.y=-0.4; if(this.vel.y>0)this.vel.y=0; this.vel.x*=0.9; this.vel.z*=0.9; this.onGround=false; }
+      else if(this.pos.y<UNDER_FLOOR){ this.pos.y=UNDER_FLOOR; this.vel.y=Math.max(0,this.vel.y*-0.12); this.vel.x*=0.86; this.vel.z*=0.86; this.onGround=true; }
+      else this.onGround=false;
+    }
     // ── solid-object collisions (crash / bounce / rest by severity) ──
     this._collide();
   }
@@ -541,62 +579,106 @@ class World {
     const sun=new THREE.DirectionalLight(0xfff4e2, 1.5); sun.position.set(140,210,90); sun.castShadow=true;
     sun.shadow.mapSize.set(2048,2048); const s=sun.shadow.camera; s.near=10;s.far=1000;s.left=-260;s.right=260;s.top=260;s.bottom=-260; sun.shadow.bias=-0.0005;
     this.sc.add(sun); this.sc.add(sun.target); this.sun=sun;
+    // cool fill from below to light the mirrored "Inception" underground level
+    const under=new THREE.DirectionalLight(0x7fa8d8, 0.6); under.position.set(-120,-260,-80); this.sc.add(under); this.sc.add(under.target);
     this.spinners=[];
     this._build();
     addEventListener('resize',()=>{this.cam.aspect=innerWidth/innerHeight;this.cam.updateProjectionMatrix();this.r.setSize(innerWidth,innerHeight);});
   }
-  add(geo,mat,x,y,z,solid){ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; if(solid!==false) m.userData.solid=1; this.sc.add(m); return m; }
+  add(geo,mat,x,y,z,solid){ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; if(solid!==false) m.userData.solid=1; (this._target||this.sc).add(m); return m; }
   _gtex(){ const s=512,cv=document.createElement('canvas');cv.width=cv.height=s;const x=cv.getContext('2d');
     x.fillStyle='#5f5d57';x.fillRect(0,0,s,s);   // darker floor
     x.globalAlpha=0.06;for(let i=0;i<1600;i++){x.fillStyle=Math.random()<.5?'#4f4d48':'#737069';x.beginPath();x.arc(Math.random()*s,Math.random()*s,2+Math.random()*5,0,7);x.fill();}
     x.globalAlpha=0.18;x.strokeStyle='#7d7a72';x.lineWidth=2;for(let i=0;i<=8;i++){const p=i/8*s;x.beginPath();x.moveTo(p,0);x.lineTo(p,s);x.moveTo(0,p);x.lineTo(s,p);x.stroke();}
     const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(170,170);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t; }
+  // ground plane with circular holes cut through it (to reach the underground level)
+  _groundWithHoles(sz, holes){
+    const shape=new THREE.Shape();
+    shape.moveTo(-sz,-sz); shape.lineTo(sz,-sz); shape.lineTo(sz,sz); shape.lineTo(-sz,sz); shape.lineTo(-sz,-sz);
+    holes.forEach(h=>{ const p=new THREE.Path(); p.absarc(h.x,-h.z,h.r,0,Math.PI*2,true); shape.holes.push(p); });  // shape Y maps to world -Z after rotation
+    const g=new THREE.ShapeGeometry(shape);
+    const p=g.attributes.position, uv=new Float32Array(p.count*2);
+    for(let i=0;i<p.count;i++){ uv[i*2]=(p.getX(i)+sz)/(2*sz); uv[i*2+1]=(p.getY(i)+sz)/(2*sz); }  // normalise UVs so the tiled texture keeps its scale
+    g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+    return g;
+  }
   _build(){
-    this.groundMat=new THREE.MeshStandardMaterial({map:this._gtex(),roughness:1});
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(5000,5000), this.groundMat);
+    this.HOLES=HOLES;   // shared with the physics so the floor clamp matches the visual holes
+    this.groundMat=new THREE.MeshStandardMaterial({map:this._gtex(),roughness:1,side:THREE.DoubleSide});
+    const ground=new THREE.Mesh(this._groundWithHoles(2500,this.HOLES), this.groundMat);
     ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; this.sc.add(ground);
+    // glowing rim around each hole so it reads as a portal
+    const rimMat=new THREE.MeshStandardMaterial({color:0x8fd0ff,emissive:0x2a6fa8,emissiveIntensity:0.9,roughness:0.4});
+    this.HOLES.forEach(h=>{ const rim=new THREE.Mesh(new THREE.TorusGeometry(h.r,0.7,8,64), rimMat); rim.rotation.x=Math.PI/2; rim.position.set(h.x,0.1,h.z); this.sc.add(rim); });
     // a few soft clouds for life
     const cm=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.85,fog:false});
     for(let i=0;i<10;i++){ const c=new THREE.Mesh(new THREE.SphereGeometry(22+Math.random()*30,7,5),cm); c.scale.y=0.4; c.position.set((Math.random()-.5)*1600,200+Math.random()*200,(Math.random()-.5)*1600); this.sc.add(c); }
     // home pad
     const pad=new THREE.Mesh(new THREE.CircleGeometry(2.4,28), new THREE.MeshStandardMaterial({color:0x33414a,roughness:0.7})); pad.rotation.x=-Math.PI/2; pad.position.y=0.05; pad.receiveShadow=true; this.sc.add(pad);
     // ── materials ──
-    const M=(c,r,m)=> new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.85:r,metalness:m||0,flatShading:true});
+    const M=(c,r,m)=> new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.85:r,metalness:m||0,flatShading:true,side:THREE.DoubleSide});
     this._mFrame=M(0xd6d9dc,0.5,0.25); this._mWood=M(0x7a5636,0.95); this._mRust=M(0xb35a3a,0.85); this._mGreen=M(0x6f8f4a,0.9); this._mDark=M(0x2a2d31,0.7);
-    // ── freestyle field (Zone-inspired) — three size tiers (1× near, 2× mid, 3× far) ──
+    // ── everything that gets mirrored underground lives in this.field ──
+    this.field=new THREE.Group(); this.sc.add(this.field); this._target=this.field;
+    // ── freestyle field (Zone-inspired) — three size tiers, DOUBLED counts ──
     const place=(fn,n,rmin,rmax)=>{ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, r=rmin+Math.random()*(rmax-rmin); fn(Math.cos(a)*r, Math.sin(a)*r); } };
-    // 1× — original size, kept where it was, inner ring
-    place((x,z)=>this._scaffold(x,z,1), 16, 24, 180);
-    place((x,z)=>this._helix(x,z,1),    16, 18, 180);
-    place((x,z)=>this._table(x,z,1),     8, 30, 180);
-    place((x,z)=>this._boxStand(x,z,1), 16, 12, 170);
-    place((x,z)=>this._squareGates(x,z,1), 8, 30, 170);
-    place((x,z)=>this._pennant(x,z,1),   8, 20, 180);
-    // 2× — double size, mid ring, spread wider
-    place((x,z)=>this._scaffold(x,z,2),  8,  80, 340);
-    place((x,z)=>this._helix(x,z,2),     8,  75, 340);
-    place((x,z)=>this._table(x,z,2),     5,  90, 340);
-    place((x,z)=>this._boxStand(x,z,2),  8,  70, 320);
-    place((x,z)=>this._squareGates(x,z,2),5, 90, 320);
-    place((x,z)=>this._pennant(x,z,2),   5,  75, 340);
-    // 3× — triple size, outer ring, spread widest
-    place((x,z)=>this._scaffold(x,z,3),  6, 170, 470);
-    place((x,z)=>this._helix(x,z,3),     6, 160, 470);
-    place((x,z)=>this._table(x,z,3),     4, 180, 470);
-    place((x,z)=>this._boxStand(x,z,3),  6, 150, 460);
-    place((x,z)=>this._squareGates(x,z,3),4,180, 460);
-    place((x,z)=>this._pennant(x,z,3),   4, 160, 470);
+    // 1× — inner ring
+    place((x,z)=>this._scaffold(x,z,1), 32, 24, 180);
+    place((x,z)=>this._helix(x,z,1),    32, 18, 180);
+    place((x,z)=>this._table(x,z,1),    16, 30, 180);
+    place((x,z)=>this._boxStand(x,z,1), 32, 12, 170);
+    place((x,z)=>this._squareGates(x,z,1),16, 30, 170);
+    place((x,z)=>this._pennant(x,z,1),  16, 20, 180);
+    // 2× — mid ring
+    place((x,z)=>this._scaffold(x,z,2), 16,  80, 340);
+    place((x,z)=>this._helix(x,z,2),    16,  75, 340);
+    place((x,z)=>this._table(x,z,2),    10,  90, 340);
+    place((x,z)=>this._boxStand(x,z,2), 16,  70, 320);
+    place((x,z)=>this._squareGates(x,z,2),10, 90, 320);
+    place((x,z)=>this._pennant(x,z,2),  10,  75, 340);
+    // 3× — outer ring
+    place((x,z)=>this._scaffold(x,z,3), 12, 170, 470);
+    place((x,z)=>this._helix(x,z,3),    12, 160, 470);
+    place((x,z)=>this._table(x,z,3),     8, 180, 470);
+    place((x,z)=>this._boxStand(x,z,3), 12, 150, 460);
+    place((x,z)=>this._squareGates(x,z,3),8,180, 460);
+    place((x,z)=>this._pennant(x,z,3),   8, 160, 470);
     // ── long curving square TUNNELS to fly through horizontally ──
     this._tunnel(-50,-30, 0.4, 18);
     this._tunnel( 70, 40, 2.5, 20);
     this._tunnel(-90, 70, 4.1, 16);
     this._tunnel( 40,-90, 1.2, 18);
+    // ── floating / suspended equipment, higher in the air ──
+    const lift=(fn,x,y,z)=>{ const g=this._group(fn); g.position.set(x,y,z); this.field.add(g); return g; };
+    // tables & box stands hanging in mid-air
+    lift(()=>this._table(0,0,2),   -40, 55,  20);
+    lift(()=>this._table(0,0,1),    90, 70, -40);
+    lift(()=>this._boxStand(0,0,3), 20, 45, -70);
+    lift(()=>this._squareGates(0,0,2), -110, 60, 40);
+    lift(()=>this._helix(0,0,2),    130, 50, 60);
+    // scaffolding turned on its side, suspended like a walkway in the sky
+    [[ -30, 40,  60, 1],[ 50, 65, -20, 2],[-90, 50, -80, 1],[110, 80, 30, 2]].forEach(([x,y,z,s])=>{
+      const g=this._group(()=>this._scaffold(0,0,s)); g.rotation.z=Math.PI/2; g.position.set(x,y,z); this.field.add(g); });
+    // ── long, big, bent cylindrical pipes you fly through (with holes in the walls) ──
+    this._pipe([[-220,18,-130],[-130,30,-50],[-30,16,40],[70,34,120],[180,22,190]], 7.5, 0x6fb8e0);
+    this._pipe([[200,24,-190],[100,40,-95],[10,18,-5],[-90,32,75],[-200,16,160]], 8.5, 0xe09a5a);
+    this._pipe([[-50,46,-210],[-20,30,-110],[45,50,-15],[20,34,85],[-35,52,180]], 6.5, 0x8fd0a0);
+    this._pipe([[150,16,150],[60,28,60],[-40,20,-30],[-140,30,-120],[-230,18,-200]], 7.0, 0xc59ae0);
+    // ── big holey torus rings — fly the donut hole or loop the tube ──
+    this._torus(   0, 40,  120, 26, 5.5, 0xe0c06f, Math.PI/2, 0);
+    this._torus( 150, 55, -60,  30, 6.5, 0x6fd0c0, Math.PI/2.4, 0.4);
+    this._torus(-160, 48,  90,  22, 5.0, 0xe07a6f, 1.2, -0.5);
+    this._torus(  90, 70, -180, 34, 7.0, 0x8f9fe0, Math.PI/2, 0.8);
+    this._torus(-110, 36, -150, 20, 4.5, 0xd0e06f, 0.6, 0.2);
+    // ── INCEPTION mirror: clone the whole field below the floor (y → −y) ──
+    this._target=null;
+    const mirror=this.field.clone(true); mirror.scale.y=-1; this.sc.add(mirror);
     this._buildColliders();
   }
-  _frame(x,y,z,roty,s,t,m){ const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=roty; this.sc.add(g);
+  _frame(x,y,z,roty,s,t,m){ const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=roty; (this._target||this.sc).add(g);
     const bar=(w,h,ox,oy)=>{ const e=new THREE.Mesh(new THREE.BoxGeometry(w,h,t),m); e.position.set(ox,oy,0); e.castShadow=true; e.receiveShadow=true; e.userData.solid=1; g.add(e); };
     bar(s+t,t,0,s/2); bar(s+t,t,0,-s/2); bar(t,s,-s/2,0); bar(t,s,s/2,0); }
-  _tunnel(x0,z0,heading,n){ let x=x0,z=z0,h=heading,y=7; const m=new THREE.MeshStandardMaterial({color:0x3a7abf,emissive:0x10324f,emissiveIntensity:0.25,roughness:0.6});
+  _tunnel(x0,z0,heading,n){ let x=x0,z=z0,h=heading,y=7; const m=new THREE.MeshStandardMaterial({color:0x3a7abf,emissive:0x10324f,emissiveIntensity:0.25,roughness:0.6,side:THREE.DoubleSide});
     for(let i=0;i<n;i++){ this._frame(x,y,z, Math.atan2(Math.cos(h),Math.sin(h)), 7, 0.45, m);
       h += Math.sin(i*0.35)*0.24;            // curve left/right
       y += Math.sin(i*0.5)*0.7;              // gentle rise/fall
@@ -617,12 +699,35 @@ class World {
     [[-10,-7.5],[10,-7.5],[-10,7.5],[10,7.5]].forEach(([lx,lz])=> this.add(new THREE.CylinderGeometry(0.3*S,0.3*S,8*S,8),this._mFrame,cx+lx*S,4*S,cz+lz*S)); }
   _boxStand(cx,cz,S=1){ this.add(new THREE.BoxGeometry(3.2*S,0.4*S,3.2*S),this._mWood,cx,3*S,cz);
     [[-1.3,-1.3],[1.3,-1.3],[-1.3,1.3],[1.3,1.3]].forEach(([lx,lz])=> this.add(new THREE.BoxGeometry(0.3*S,3*S,0.3*S),this._mWood,cx+lx*S,1.5*S,cz+lz*S)); }
-  _squareGates(cx,cz0,S=1){ const cols=[0xb35a3a,0xc77a4a,0xa84a3a]; for(let i=0;i<4;i++){ const s=(5+(i%2)*1.5)*S, t=0.45*S, cz=cz0+i*9*S, m=new THREE.MeshStandardMaterial({color:cols[i%3],roughness:0.8}), y=s/2+2*S;
+  _squareGates(cx,cz0,S=1){ const cols=[0xb35a3a,0xc77a4a,0xa84a3a]; for(let i=0;i<4;i++){ const s=(5+(i%2)*1.5)*S, t=0.45*S, cz=cz0+i*9*S, m=new THREE.MeshStandardMaterial({color:cols[i%3],roughness:0.8,side:THREE.DoubleSide}), y=s/2+2*S;
     this.add(new THREE.BoxGeometry(s+t,t,t),m,cx,y+s/2,cz); this.add(new THREE.BoxGeometry(s+t,t,t),m,cx,y-s/2,cz); this.add(new THREE.BoxGeometry(t,s,t),m,cx-s/2,y,cz); this.add(new THREE.BoxGeometry(t,s,t),m,cx+s/2,y,cz); } }
   _pennant(cx,cz,S=1){ this.add(new THREE.CylinderGeometry(0.2*S,0.2*S,9*S,8),this._mFrame,cx,4.5*S,cz);
     const tri=new THREE.BufferGeometry(); tri.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0, 5*S,1.4*S,0, 0,2.8*S,0],3)); tri.computeVertexNormals();
-    const t=new THREE.Mesh(tri,new THREE.MeshStandardMaterial({color:0x4a8f5a,roughness:0.7,side:THREE.DoubleSide})); t.position.set(cx,7*S,cz); t.castShadow=true; this.sc.add(t); }
-  _buildColliders(){ COLLIDERS.length=0; const b=new THREE.Box3(); this.sc.traverse(o=>{ if(o.userData&&o.userData.solid){ b.setFromObject(o); if(isFinite(b.min.x)&&isFinite(b.max.x)) COLLIDERS.push({min:b.min.clone(),max:b.max.clone()}); } }); }
+    const t=new THREE.Mesh(tri,new THREE.MeshStandardMaterial({color:0x4a8f5a,roughness:0.7,side:THREE.DoubleSide})); t.position.set(cx,7*S,cz); t.castShadow=true; (this._target||this.sc).add(t); }
+  // build whatever fn() draws into a fresh group (so it can be lifted / rotated / suspended)
+  _group(fn){ const g=new THREE.Group(); const prev=this._target; this._target=g; fn(); this._target=prev; return g; }
+  // alpha texture: opaque wall with circular holes punched out
+  _pipeTex(){ const s=256, cv=document.createElement('canvas'); cv.width=cv.height=s; const x=cv.getContext('2d');
+    x.fillStyle='#fff'; x.fillRect(0,0,s,s); x.fillStyle='#000';
+    for(let i=0;i<5;i++) for(let j=0;j<5;j++){ x.beginPath(); x.arc((i+0.5)/5*s,(j+0.5)/5*s, s*0.058, 0, 7); x.fill(); }
+    const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(26,5); return t; }
+  // long, big, bent cylindrical pipe with holes — fly straight through the inside (not solid)
+  _pipe(pts, radius, color){
+    const curve=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0],p[1],p[2])));
+    const geo=new THREE.TubeGeometry(curve, 160, radius, 22, false);
+    const mat=new THREE.MeshStandardMaterial({color:color||0x6fb8e0, metalness:0.35, roughness:0.5,
+      emissive:color||0x16465f, emissiveIntensity:0.18, alphaMap:this._pipeTex(), transparent:true, alphaTest:0.45, side:THREE.DoubleSide});
+    const m=new THREE.Mesh(geo,mat); m.receiveShadow=true;   // no userData.solid → open to fly through
+    (this._target||this.sc).add(m); return m; }
+  // big holey torus ring — same fly-through approach as the pipes (fly the donut hole or the tube)
+  _torus(x,y,z, R, tubeR, color, rx, ry){
+    const geo=new THREE.TorusGeometry(R, tubeR, 22, 140);
+    const tex=this._pipeTex(); tex.repeat.set(44,5);
+    const mat=new THREE.MeshStandardMaterial({color:color||0xe0c06f, metalness:0.4, roughness:0.45,
+      emissive:color||0x5a4416, emissiveIntensity:0.2, alphaMap:tex, transparent:true, alphaTest:0.45, side:THREE.DoubleSide});
+    const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.rotation.x=rx||0; m.rotation.y=ry||0; m.receiveShadow=true;  // not solid
+    (this._target||this.sc).add(m); return m; }
+  _buildColliders(){ COLLIDERS.length=0; this.sc.updateMatrixWorld(true); const b=new THREE.Box3(); this.sc.traverse(o=>{ if(o.userData&&o.userData.solid){ b.setFromObject(o); if(isFinite(b.min.x)&&isFinite(b.max.x)) COLLIDERS.push({min:b.min.clone(),max:b.max.clone()}); } }); }
   render(quad){
     this._up.setFromAxisAngle(this._ax,(quad.D.camAngle||20)*Math.PI/180);
     this.cam.position.copy(quad.pos); this.cam.quaternion.copy(quad.quat).multiply(this._up);
@@ -638,9 +743,41 @@ class HUD { upd(q,inp){
   $('stkL').style.left=(50+inp.y*40)+'%'; $('stkL').style.top=(50-(inp.t*2-1)*40)+'%';
   $('stkR').style.left=(50+inp.r*40)+'%'; $('stkR').style.top=(50-inp.p*40)+'%';
 } }
+// ── motor / throttle sound (Web Audio, fully synthesised — no assets) ──
+class Audio {
+  constructor(){ this.ready=false; this.vol=0.6; this.ctx=null; }
+  start(){ if(this.ready) { if(this.ctx.state==='suspended') this.ctx.resume(); return; }
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    const c=this.ctx=new AC(); this.ready=true;
+    // master
+    this.master=c.createGain(); this.master.gain.value=this.vol; this.master.connect(c.destination);
+    // low-pass to keep the whine from getting harsh; cutoff rises with throttle
+    this.lp=c.createBiquadFilter(); this.lp.type='lowpass'; this.lp.frequency.value=600; this.lp.connect(this.master);
+    // three detuned saw oscillators = the motor buzz (fundamental + harmonics)
+    this.oscs=[]; this.oscGain=c.createGain(); this.oscGain.gain.value=0.0; this.oscGain.connect(this.lp);
+    [[1,0],[2.01,7],[3.0,-6]].forEach(([mul,det])=>{ const o=c.createOscillator(); o.type='sawtooth'; o.detune.value=det; o._mul=mul; o.start(); o.connect(this.oscGain); this.oscs.push(o); });
+    // white-noise prop wash through a bandpass, louder at high throttle
+    const len=c.sampleRate*1.5, buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+    this.noise=c.createBufferSource(); this.noise.buffer=buf; this.noise.loop=true;
+    this.bp=c.createBiquadFilter(); this.bp.type='bandpass'; this.bp.frequency.value=1400; this.bp.Q.value=0.7;
+    this.noiseGain=c.createGain(); this.noiseGain.gain.value=0.0;
+    this.noise.connect(this.bp); this.bp.connect(this.noiseGain); this.noiseGain.connect(this.master);
+    this.noise.start();
+  }
+  setVol(v){ this.vol=v; if(this.ready) this.master.gain.setTargetAtTime(v,this.ctx.currentTime,0.05); }
+  upd(spool, armed){ if(!this.ready) return; const t=this.ctx.currentTime, T=armed?spool:0;
+    const f=70 + T*250;                                  // 70 Hz idle hum → ~320 Hz full-send whine
+    this.oscs.forEach(o=> o.frequency.setTargetAtTime(f*o._mul, t, 0.03));
+    this.lp.frequency.setTargetAtTime(500 + T*4200, t, 0.04);          // brighter under load
+    this.oscGain.gain.setTargetAtTime(armed?(0.05+T*0.32):0, t, 0.06); // buzz level
+    this.bp.frequency.setTargetAtTime(900 + T*2600, t, 0.05);
+    this.noiseGain.gain.setTargetAtTime(armed?(0.02+T*0.16):0, t, 0.07); // prop wash
+  }
+}
 class Sim {
-  constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this.world=new World(); this.hud=new HUD();
-    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; $('hDrone').textContent=QUADS['thezone'].name;
+  constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this.world=new World(); this.hud=new HUD(); this.audio=new Audio();
+    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; $('hDrone').textContent=QUADS['thezone'].name;
     this._tune(); this._setup(); requestAnimationFrame(t=>this._loop(t)); }
   _tune(){
     const bind=(id,vid,fmt,fn)=>{ const s=$(id),v=$(vid); s.oninput=()=>{ fn(+s.value); v.textContent=fmt(+s.value); }; };
@@ -650,31 +787,75 @@ class Sim {
       $('tP').value=D.Kr; $('vP').textContent=D.Kr;
       $('tI').value=D.pidI||0; $('vI').textContent=D.pidI||0;
       $('tD').value=D.pidD||0; $('vD').textContent=D.pidD||0;
+      $('tTwr').value=D.twr; $('vTwr').textContent=D.twr;
+      $('tMass').value=Math.round(D.mass*1000); $('vMass').textContent=Math.round(D.mass*1000);
+      $('tThr').value=Math.round(D.thrTau*1000); $('vThr').textContent=Math.round(D.thrTau*1000);
+      $('tGrav').value=Env.GRAV; $('vGrav').textContent=Env.GRAV.toFixed(1);
+      $('tExpo').value=Math.round(D.expo*100); $('vExpo').textContent=Math.round(D.expo*100);
       const ca=Math.round(D.camAngle==null?20:D.camAngle); $('tCam').value=ca; $('vCam').textContent=ca+'°';
+      const vv=Math.round(this.audio.vol*100); $('tVol').value=vv; $('vVol').textContent=vv+'%';
       const fb=this.world._floor==null?100:this.world._floor; $('tFloor').value=fb; $('vFloor').textContent=fb+'%'; };
     bind('tRate','vRate',v=>Math.round(v),v=>{const D=this.quad.D; if(D.useActual)D.maxRate=v; D.rate=v;});
     bind('tSnap','vSnap',v=>Math.round(v/1000)+'k',v=>{this.quad.D.maxAlpha=v; this.quad.D.maxAlphaY=Math.round(v*0.4);});
     bind('tP','vP',v=>v,v=>this.quad.D.Kr=v);
     bind('tI','vI',v=>v,v=>this.quad.D.pidI=v);
     bind('tD','vD',v=>v,v=>this.quad.D.pidD=v);
+    bind('tTwr','vTwr',v=>v,v=>this.quad.D.twr=v);
+    bind('tMass','vMass',v=>Math.round(v),v=>this.quad.D.mass=v/1000);
+    bind('tThr','vThr',v=>Math.round(v),v=>{ this.quad.D.thrTau=v/1000; this.quad.D.thrTauDn=(v/1000)*2; });
+    bind('tGrav','vGrav',v=>(+v).toFixed(1),v=>{ Env.GRAV=v; });
+    bind('tExpo','vExpo',v=>Math.round(v),v=>this.quad.D.expo=v/100);
     bind('tCam','vCam',v=>v+'°',v=>{ this.quad.D.camAngle=v; });
+    bind('tVol','vVol',v=>v+'%',v=>{ this.audio.setVol(v/100); });
     bind('tFloor','vFloor',v=>v+'%',v=>{ this.world._floor=v; if(this.world.groundMat) this.world.groundMat.color.setScalar(v/100); });
   }
+  _hasCal(){ try{ return !!localStorage.getItem('fpvcal'); }catch(e){ return false; } }
   _setup(){ const scan=()=>{ const pads=navigator.getGamepads?navigator.getGamepads():[]; let idx=-1; for(let i=0;i<pads.length;i++) if(pads[i]){idx=i;break;}
-      this._gpi=idx; $('flyGp').style.display=idx>=0?'inline-block':'none';
-      $('gpStatus').innerHTML = idx>=0 ? ('<b>✓ '+pads[idx].id.slice(0,38)+'</b>') : 'Keyboard ready — move a stick to use a controller.'; };
+      this._gpi=idx; const on=idx>=0;
+      $('flyGp').style.display=on?'inline-block':'none'; $('btnCal').style.display=on?'inline-block':'none';
+      if(!on){ $('gpStatus').innerHTML='Keyboard ready — move a stick to use a controller.'; }
+      else if(this._hasCal()){ $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#3fe08a">Saved calibration found — fly, or re-calibrate.</span>'; $('btnCal').textContent='RE-CALIBRATE'; }
+      else { $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#ffb04a">Not calibrated yet — calibrate sticks (recommended).</span>'; $('btnCal').textContent='CALIBRATE STICKS'; } };
     this._si=setInterval(scan,300); scan();
-    $('flyKb').onclick=()=>this._go(false); $('flyGp').onclick=()=>this._go(true); }
+    $('flyKb').onclick=()=>this._go(false); $('flyGp').onclick=()=>this._go(true);
+    $('btnCal').onclick=()=>{ this.inp.gpi=this._gpi; this._calibrate(()=>scan()); };
+    $('tCal').onclick=()=>{ this._calibrate(()=>{ if(this.setOpen)this._refreshTune(); }); };
+    $('calCancel').onclick=()=>this._cancelCal(); }
+  _calibrate(done){
+    const idx=(this.inp.gpi>=0?this.inp.gpi:this._gpi);
+    const pads=()=>navigator.getGamepads?navigator.getGamepads():[];
+    if(!pads()[idx]){ flash('No controller detected','#ff6048'); return; }
+    this._calDone=done; this.calibrating=true; $('cal').classList.add('on');
+    this._restoreCursor=document.body.style.cursor; document.body.style.cursor='default';
+    const steps=[['throttle','Push the <b>THROTTLE</b> stick fully UP'],['yaw','Full <b>YAW</b> — rudder fully RIGHT'],['pitch','Full <b>PITCH</b> — elevator fully FORWARD'],['roll','Full <b>ROLL</b> — aileron fully RIGHT']];
+    const map={}, inv={}; let i=0, base=null, phase='settle', tWait=0;
+    const tick=()=>{ if(!this.calibrating) return; const g=pads()[idx];
+      if(g){
+        if(i>=steps.length){ this.inp.map=map; this.inp.inv=inv; try{ localStorage.setItem('fpvcal', JSON.stringify({map,inv})); }catch(e){}
+          this._endCal('✓ CALIBRATED','#3fe08a'); if(this._calDone)this._calDone(); return; }
+        const [name,msg]=steps[i];
+        if(base===null){ base=g.axes.slice(); $('calMsg').innerHTML='<div style="font-size:12px;color:#7fb6ff;letter-spacing:3px;margin-bottom:10px;">STEP '+(i+1)+' / 4</div>'+msg; }
+        let bj=-1,bd=0; for(let j=0;j<g.axes.length;j++){ const d=g.axes[j]-(base[j]||0); if(Math.abs(d)>Math.abs(bd)){bd=d;bj=j;} }
+        if(phase==='settle'){ if(Math.abs(bd)>0.6){ map[name]=bj; inv[name]=(bd<0); phase='wait'; tWait=performance.now(); $('calMsg').innerHTML='<div style="color:#3fe08a;font-size:28px;">✓ got it</div>'; } }
+        else if(phase==='wait'){ if(performance.now()-tWait>700){ i++; base=null; phase='settle'; } }
+      }
+      requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
+  _endCal(msg,col){ this.calibrating=false; $('cal').classList.remove('on'); if(this._restoreCursor!=null) document.body.style.cursor=this._restoreCursor; if(msg)flash(msg,col); }
+  _cancelCal(){ this._endCal('Calibration cancelled','#ffb04a'); }
   _go(gp){ clearInterval(this._si);
     if(gp){ this.inp.gp=true; this.inp.gpi=this._gpi;
       try{ const s=localStorage.getItem('fpvcal'); if(s){ const o=JSON.parse(s); if(o.map)this.inp.map=o.map; if(o.inv)this.inp.inv=o.inv; } }catch(e){}
     } else this.inp.gp=false;
     $('setup').classList.add('hide'); $('hud').classList.add('on'); document.body.style.cursor='none'; this.flying=true;
+    this.audio.start();   // resume AudioContext on this user gesture
     flash('▶ '+this.quad.D.name,'#3fe08a'); }
   _loop(ts){ requestAnimationFrame(t=>this._loop(t)); const dt=this.lt?Math.min((ts-this.lt)/1000,0.05):0.016; this.lt=ts; wind.upd(dt);
     if(!this.flying){ this.world.render(this.quad); return; }
+    if(this.calibrating){ this.world.render(this.quad); return; }
     this.inp.upd(dt, this.quad.D.expo);
-    if(this.inp.toggleSet){ this.setOpen=!this.setOpen; $('set').classList.toggle('on',this.setOpen); $('legend').style.display=this.setOpen?'none':'block'; if(this.setOpen)this._refreshTune(); }
+    if(this.inp.toggleSet){ this.setOpen=!this.setOpen; $('set').classList.toggle('on',this.setOpen); $('legend').style.display=this.setOpen?'none':'block'; document.body.style.cursor=this.setOpen?'default':'none'; if(this.setOpen)this._refreshTune(); }
     if(this.inp.camUp||this.inp.camDn){ const D=this.quad.D; D.camAngle=Math.max(0,Math.min(55,(D.camAngle==null?20:D.camAngle)+(this.inp.camUp?2:-2))); if(this.setOpen)this._refreshTune(); flash('CAM '+Math.round(D.camAngle)+'°','#7fd0ff'); }
     if(this.inp.arm){ this.quad.arm(true); flash(this.quad.armed?'▶ ARMED':'■ DISARMED', this.quad.armed?'#3fe08a':'#ff6048'); }
     if(this.inp.reset){ const a=this.quad.armed; this.quad.reset(); this.quad.armed=a; this.inp.kt=0; flash('⟲ RESET','#7fd0ff'); }
@@ -682,6 +863,7 @@ class Sim {
     if(this.inp.toggleMode){ const m=this.quad.cycleMode(); flash(m==='ANGLE'?'⊕ ANGLE':'⟲ ACRO', m==='ANGLE'?'#ffd84a':'#3fe08a'); }
     if(this.inp.swap && QUADS[this.inp.swap]){ this.quad.setProfile(this.inp.swap); this.quad.reset(); this.inp.kt=0; $('hDrone').textContent=QUADS[this.inp.swap].name; if(this.setOpen)this._refreshTune(); flash('⟳ '+QUADS[this.inp.swap].name,'#7fd0ff'); }
     this.quad.upd(dt,this.inp); this.world.render(this.quad); this.hud.upd(this.quad,this.inp);
+    this.audio.upd(this.quad.spool, this.quad.armed);
   }
 }
 new Sim();
