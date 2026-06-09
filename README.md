@@ -2,13 +2,13 @@
 
 A standalone, single-file FPV drone freestyle space inspired by *The Zone*. Open-field, low-poly, physics-driven, and built to fly. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN).
 
-> **Latest:** `trippy-plains-v8.html` — just double-click to open in a desktop browser (Chrome recommended) and fly.
+> **Latest:** `trippy-plains-v9.html` — just double-click to open in a desktop browser (Chrome recommended) and fly.
 
 ---
 
 ## 🚀 Quick start
 
-1. Double-click `trippy-plains-v8.html` to open it directly in a desktop browser.
+1. Double-click `trippy-plains-v9.html` to open it directly in a desktop browser.
 2. On the setup screen choose **Keyboard** or **Controller** (plug in / power on your gamepad first — move a stick to wake it).
 3. If a controller is detected you can **calibrate the sticks** before flying (see below).
 4. Fly. Press **TAB** any time for the controls + tuning panel.
@@ -92,13 +92,14 @@ A fully synthesised motor sound (Web Audio, no audio files): pitch, brightness a
 | `trippy-plains-v5.html` | Synthesised throttle / motor sound + volume control. |
 | `trippy-plains-v6.html` | Doubled equipment, floor hole, mirrored "Inception" underground, bent pipes. |
 | `trippy-plains-v7.html` | Holey torus rings + full flight tuning (power, mass, throttle resp, gravity, expo). |
-| `trippy-plains-v8.html` | **Second floor portal + DJI/gamepad stick calibration (setup & TAB).** |
+| `trippy-plains-v8.html` | Second floor portal + DJI/gamepad stick calibration (setup & TAB). |
+| `trippy-plains-v9.html` | **Zone-grade physics: motor-mixer saturation + air mode, prop inflow & translational lift, rotor inflow damping, gyroscopic coupling, idle spool, per-quad FoV (125° Zone).** |
 
 ---
 
 ## 🛠️ Tech
 
-Three.js r128 (UMD global). Accel-limited acro rate model with Betaflight "Actual" rates, battery sag, wind, propwash, ground effect, and AABB collisions. Procedural canvas textures; alpha-mapped holey pipes and toruses; ground built with `ShapeGeometry` holes; the underground is a mirrored (`scale.y = −1`) clone of the field. No dependencies to install.
+Three.js r128 (UMD global). Accel-limited acro rate model with Betaflight "Actual" rates, motor-mixer saturation (air mode), prop inflow & translational lift, rotor inflow damping, gyroscopic ω×Iω coupling, battery sag, wind, propwash/VRS, ground effect, and AABB collisions. Procedural canvas textures; alpha-mapped holey pipes and toruses; ground built with `ShapeGeometry` holes; the underground is a mirrored (`scale.y = −1`) clone of the field. No dependencies to install.
 
 ---
 

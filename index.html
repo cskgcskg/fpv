@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trippy Plains v8 — FPV Freestyle</title>
+<title>Trippy Plains v9 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;}
@@ -120,7 +120,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v8 · 2 PORTALS · STICK CALIBRATION</div>
+  <div class="sub">FPV FREESTYLE · v9 · ZONE PHYSICS</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-5 drone &middot; M acro/angle<br>Default quad: THE ZONE (5" freestyle). Open directly or via a local server.</div>
@@ -160,7 +160,7 @@ const QUADS = {
     maxAlpha:22000, maxAlphaY:14000,
     Kr:90, thrTau:0.028, thrTauDn:0.055,
     dxy:0.018, dy:0.030,
-    expo:0.40, camAngle:20,               // The Zone camera angle 20°, FoV ~125°
+    expo:0.40, camAngle:20, fov:125,      // The Zone camera angle 20°, FoV 125°
     rollMul:1.0,
     cells:6, capMah:1300, Rint:0.024, maxAmps:130,
     windScale:1.0, angleMax:55,
@@ -303,7 +303,7 @@ class Quad {
       this.pos.addScaledVector(this.vel,dt);
       this.quat.slerp(this._idq, Math.min((this.onGround?8:1.2)*dt,1));
       this.angV.multiplyScalar(1-Math.min(8*dt,1));
-      this.spool=0;
+      this.spool=0; this.motor=0;
       if(overHole(this.pos.x,this.pos.z)){ this.below=this.pos.y<0; this.onGround=false; }
       else if(!this.below){ if(this.pos.y<0.4){ this.pos.y=0.4; this.onGround=true; if(this.vel.y<0)this.vel.y=0; this.vel.x*=0.85; this.vel.z*=0.85; } else this.onGround=false; }
       else if(this.pos.y>-0.4){ this.pos.y=-0.4; if(this.vel.y>0)this.vel.y=0; this.onGround=false; }
@@ -350,7 +350,9 @@ class Quad {
         spZ=-inp.r*D.rate*rm*d2r; spX=-inp.p*D.rate*d2r;
       }
       // ── rate PID (P=Kr, I=pidI, D=pidD); defaults I=0,D=0 reproduce the base feel ──
-      const mA=D.maxAlpha*d2r, mAy=D.maxAlphaY*d2r, Kp=D.Kr, Ki=D.pidI||0, Kd=(D.pidD||0)*0.001;
+      // motor-mixer saturation: rotation authority shrinks near 0%/100% collective; air mode keeps a floor
+      const sA=Math.max(this.spool, this.armed?0.045:0), head=Math.min(sA,1-sA), auth=clamp(0.55+1.2*head,0.55,1);
+      const mA=D.maxAlpha*d2r*auth, mAy=D.maxAlphaY*d2r*auth*(0.45+0.55*sA), Kp=D.Kr, Ki=D.pidI||0, Kd=(D.pidD||0)*0.001;
       const it=this._iterm, pa=this._prevAngV;
       const stepAx=(ax,sp,lim)=>{ const e=sp-this.angV[ax];
         it[ax]=clamp(it[ax]+e*Ki*dt, -lim*0.5, lim*0.5);
@@ -358,26 +360,35 @@ class Quad {
         const aa=clamp(e*Kp + it[ax] - dterm, -lim, lim);
         this.angV[ax]+=aa*dt; pa[ax]=this.angV[ax]; };
       stepAx('z',spZ,mA); stepAx('x',spX,mA); stepAx('y',spY,mAy);
+      // inertia cross-coupling (Euler ω×Iω, Iy≈2Ix): yaw+roll bleeds into pitch — the PID has to fight it
+      const cwx=this.angV.x, cwy=this.angV.y, kc=0.55;
+      this.angV.x+=kc*cwy*this.angV.z*dt; this.angV.z-=kc*cwx*cwy*dt;
       // throttle → motor spool (asymmetric: spins up faster than it coasts down)
       const tau = inp.t>this.spool ? D.thrTau : (D.thrTauDn||D.thrTau);
       this.spool+=(inp.t-this.spool)*(1-Math.exp(-dt/tau));
     }
     this.spool=clamp(this.spool,0,1);
-    this.motor=this.spool;
+    // air mode: armed idle spool + collective bump during hard rotation (Betaflight air-mode behaviour)
+    let sp=Math.max(this.spool, this.armed?0.045:0);
+    sp=Math.max(sp, Math.min(0.16, 0.022*Math.hypot(this.angV.x,this.angV.z)));
+    this.motor=sp;
     // ── battery: sag under load saps thrust (punch fades, hover creeps up as it drains) ──
-    this.battery.update(dt, this.spool, D.maxAmps||120);
+    this.battery.update(dt, sp, D.maxAmps||120);
     const battScale=this.battery.thrustScale();
     // ── collective thrust along body-up ──
-    let thrust=D.twr*D.mass*G*Math.pow(this.spool, D.k)*battScale;
+    let thrust=D.twr*D.mass*G*Math.pow(sp, D.k)*battScale;
     const agl=Math.max(0,this.pos.y);
     if(agl<0.30 && thrust>0) thrust*=1+0.10*(1-agl/0.30);   // mild ground effect
     // ── relative airspeed (groundspeed − wind) drives all aero ──
     const air=this._v2.copy(this.vel); if(wind.enabled) air.sub(wind.vec);
     const vb=air.applyQuaternion(qi);                       // airspeed in body frame
+    // prop inflow: climbing into the disk sheds thrust; translational lift adds a little in fast lateral flight
+    if(vb.y>0.5) thrust*=Math.max(0.55, 1-0.020*(vb.y-0.5));
+    thrust*=1+Math.min(0.08, Math.hypot(vb.x,vb.z)*0.003);
     // ── vortex ring state: descending fast into own downwash → thrust loss + buffet ──
-    const vh=2.5+4.0*this.spool, vDown=-vb.y;
+    const vh=2.5+4.0*sp, vDown=-vb.y;
     let buf=0;
-    if(this.spool>0.08 && vDown>0.25*vh && vDown<2.4*vh){
+    if(sp>0.08 && vDown>0.25*vh && vDown<2.4*vh){
       const sev=Math.sin(clamp((vDown/vh-0.25)/2.15,0,1)*Math.PI);
       thrust*=(1-0.30*sev); buf=sev;
     }
@@ -385,7 +396,7 @@ class Quad {
     this._pwPhase+=dt*55;
     const rateMag=Math.hypot(this.angV.x,this.angV.z);
     // propwash mainly from VRS (flying back through wash); only mild wobble during rotation
-    const wake=buf*0.9 + clamp(rateMag*0.015,0,0.22)*(this.spool<0.5?1:0.3);
+    const wake=buf*0.9 + clamp(rateMag*0.015,0,0.22)*(sp<0.5?1:0.3);
     if(wake>0.01){ const ba=wake*5.5;
       this.angV.x+=(Math.sin(this._pwPhase)*0.6+(Math.random()-.5))*ba*dt;
       this.angV.z+=(Math.cos(this._pwPhase*1.13)*0.6+(Math.random()-.5))*ba*dt; }
@@ -400,6 +411,9 @@ class Quad {
                             -D.dy *dm*vb.y*Math.abs(vb.y),
                             -D.dxy*dm*vb.z*Math.abs(vb.z));
     acc.add(drag.applyQuaternion(q).multiplyScalar(1/D.mass));
+    // rotor inflow damping — spinning props brake drift in proportion to RPM (linear, body frame)
+    const rdmp=0.12*sp;
+    acc.add(this._v3.set(-rdmp*vb.x, -0.05*sp*vb.y, -rdmp*vb.z).applyQuaternion(q));
     // ── integrate ──
     this.vel.addScaledVector(acc,dt);
     this.pos.addScaledVector(this.vel,dt);
@@ -729,6 +743,7 @@ class World {
     (this._target||this.sc).add(m); return m; }
   _buildColliders(){ COLLIDERS.length=0; this.sc.updateMatrixWorld(true); const b=new THREE.Box3(); this.sc.traverse(o=>{ if(o.userData&&o.userData.solid){ b.setFromObject(o); if(isFinite(b.min.x)&&isFinite(b.max.x)) COLLIDERS.push({min:b.min.clone(),max:b.max.clone()}); } }); }
   render(quad){
+    const fv=quad.D.fov||120; if(this.cam.fov!==fv){ this.cam.fov=fv; this.cam.updateProjectionMatrix(); }
     this._up.setFromAxisAngle(this._ax,(quad.D.camAngle||20)*Math.PI/180);
     this.cam.position.copy(quad.pos); this.cam.quaternion.copy(quad.quat).multiply(this._up);
     this.sun.position.set(quad.pos.x+140,quad.pos.y+210,quad.pos.z+90); this.sun.target.position.copy(quad.pos); this.sun.target.updateMatrixWorld();
@@ -863,7 +878,7 @@ class Sim {
     if(this.inp.toggleMode){ const m=this.quad.cycleMode(); flash(m==='ANGLE'?'⊕ ANGLE':'⟲ ACRO', m==='ANGLE'?'#ffd84a':'#3fe08a'); }
     if(this.inp.swap && QUADS[this.inp.swap]){ this.quad.setProfile(this.inp.swap); this.quad.reset(); this.inp.kt=0; $('hDrone').textContent=QUADS[this.inp.swap].name; if(this.setOpen)this._refreshTune(); flash('⟳ '+QUADS[this.inp.swap].name,'#7fd0ff'); }
     this.quad.upd(dt,this.inp); this.world.render(this.quad); this.hud.upd(this.quad,this.inp);
-    this.audio.upd(this.quad.spool, this.quad.armed);
+    this.audio.upd(this.quad.motor, this.quad.armed);
   }
 }
 new Sim();
