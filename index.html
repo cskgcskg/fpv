@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trippy Plains v14 — FPV Freestyle</title>
+<title>Trippy Plains v16 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;}
@@ -64,6 +64,8 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 .maprow select{background:#0a1620;color:#cfe;border:1px solid #345;border-radius:4px;font-family:inherit;font-size:11px;}
 .maprow .btn{padding:4px 10px;font-size:10px;}
 #set .btn{font-size:11px;padding:7px 10px;letter-spacing:0.5px;margin:2px 0;}
+.chip{border:1px solid #7fb6ff;border-radius:5px;padding:4px 8px;font-size:11px;cursor:grab;color:#cfe6ff;background:rgba(127,182,255,.08);user-select:none;}
+.chip.sel{border-color:#3fe08a;background:rgba(63,224,138,.15);color:#bff;}
 </style></head>
 <body>
 <canvas id="c"></canvas>
@@ -127,7 +129,20 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div class="sr"><span>Contrast %</span><input type="range" id="tCon" min="60" max="170" step="5"><span class="sv" id="vCon"></span></div>
   <div class="sr"><span>Colour %</span><input type="range" id="tSat" min="0" max="220" step="5"><span class="sv" id="vSat"></span></div>
   <div class="st">MAP · N TO SWAP</div>
-  <div style="display:flex;gap:6px;"><button class="btn sec" id="mapA">PLAINS</button><button class="btn sec" id="mapB">ZONE FIELD</button><button class="btn sec" id="mapC">FACTORY</button></div>
+  <div style="display:flex;gap:6px;"><button class="btn sec" id="mapA">PLAINS</button><button class="btn sec" id="mapB">ZONE FIELD</button><button class="btn sec" id="mapC">FACTORY</button><button class="btn sec" id="mapD">SANDBOX</button></div>
+  <div class="st">BUILD · SANDBOX MAP</div>
+  <div id="palette" style="display:flex;flex-wrap:wrap;gap:5px;">
+    <div class="chip" draggable="true" data-t="box">📦 box</div>
+    <div class="chip" draggable="true" data-t="wall">🧱 wall</div>
+    <div class="chip" draggable="true" data-t="gate">🚪 gate</div>
+    <div class="chip" draggable="true" data-t="hoop">⭕ hoop</div>
+    <div class="chip" draggable="true" data-t="arch">🌉 arch</div>
+    <div class="chip" draggable="true" data-t="tower">🗼 tower</div>
+    <div class="chip" draggable="true" data-t="mound">⛰ mound</div>
+    <div class="chip" draggable="true" data-t="pole">📍 pole</div>
+  </div>
+  <div class="small">drag onto the world (or click chip, then click ground) · right-click an object removes it · layout auto-saved</div>
+  <button class="btn sec" id="bClear" style="width:100%;">CLEAR SANDBOX</button>
   <div class="st">TUNE PRESET</div>
   <div style="display:flex;gap:6px;"><button class="btn sec" id="tSave">SAVE</button><button class="btn sec" id="tLoad">LOAD</button><button class="btn sec" id="tDef">DEFAULT</button></div>
   <div class="st">CONTROLLER</div>
@@ -158,7 +173,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v14 · FEEL CONTROLS · RACE GEAR · COLOUR</div>
+  <div class="sub">FPV FREESTYLE · v16 · SANDBOX BUILDER · 4 MAPS</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-8 drone &middot; M acro/angle &middot; ESC menu<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
@@ -757,6 +772,10 @@ class World {
       this.sc.background.set(0x9fc3e6); this.sc.fog.color.set(0xaccde8); this.sc.fog.near=400; this.sc.fog.far=2400;
       this.sun.color.set(0xfff2dd); this._root.add(this._sky('#6f9fd8','#dceaf2'));
       this._buildZone(); }
+    else if(id==='build'){ _seed=424242;
+      this.sc.background.set(0x0e1218); this.sc.fog.color.set(0x0e1218); this.sc.fog.near=600; this.sc.fog.far=2600;
+      this.sun.color.set(0xbfd8ff); this._root.add(this._sky('#16213a','#0a0d12'));
+      this._buildSandbox(); }
     else if(id==='factory'){ _seed=777777;
       this.sc.background.set(0xb8b4ac); this.sc.fog.color.set(0xc0bbb0); this.sc.fog.near=350; this.sc.fog.far=2200;
       this.sun.color.set(0xffe2bc); this._root.add(this._sky('#8e96a4','#d8c8a8'));
@@ -788,7 +807,7 @@ class World {
     // ── everything that gets mirrored underground lives in this.field ──
     this.field=new THREE.Group(); this._root.add(this.field); this._target=this.field;
     // ── freestyle field (Zone-inspired) — three size tiers, DOUBLED counts ──
-    const pclear=(x,z)=>Math.hypot(x+26,z+34)>26 && Math.hypot(x-26,z+34)>26;   // portal corridors stay clean
+    const pclear=(x,z)=>!(Math.abs(z+34)<26 && Math.abs(x)<70);   // portal corridors stay clean
     const place=(fn,n,rmin,rmax)=>{ for(let i=0;i<n;i++){ let x=0,z=0,k=0;
       do{ const a=rnd()*Math.PI*2, r=rmin+rnd()*(rmax-rmin); x=Math.cos(a)*r; z=Math.sin(a)*r; }while(!pclear(x,z)&&k++<8);
       if(pclear(x,z)) fn(x,z); } };  // seeded → fixed map
@@ -1077,7 +1096,7 @@ class World {
     this._pipe([[-60,30,220],[40,18,140],[140,26,80],[260,14,140],[360,22,240]],7,0x6e7076);
     // debris crates
     for(let i=0;i<44;i++){ const a=rnd()*6.283,r=40+rnd()*260, ddx=Math.cos(a)*r, ddz=Math.sin(a)*r;
-      if(Math.hypot(ddx+26,ddz+34)<26||Math.hypot(ddx-26,ddz+34)<26) continue;
+      if(Math.abs(ddz+34)<26&&Math.abs(ddx)<70) continue;
       this.add(new THREE.BoxGeometry(2+rnd()*4,2+rnd()*3,2+rnd()*4),i%2?mRust:mDark,ddx,1.5,ddz); }
     // ── tank farm + bund wall ──
     for(let i=0;i<6;i++){ const txx=-340+(i%3)*22, tzz=40+((i/3)|0)*22;
@@ -1154,7 +1173,7 @@ class World {
     this._pipe([[-420,20,260],[-300,28,180],[-160,16,120],[0,26,180],[140,18,260]],6,0x9a948a);
     this._pipe([[420,16,60],[300,26,-40],[160,14,-120],[20,22,-210],[-120,16,-260]],6.5,0xb05548);
     for(let i=0;i<6;i++){ const a=rnd()*6.283,r=80+rnd()*320, cx2=Math.cos(a)*r, cz2=Math.sin(a)*r;
-      if(Math.hypot(cx2+26,cz2+34)<26||Math.hypot(cx2-26,cz2+34)<26) continue;
+      if(Math.abs(cz2+34)<26&&Math.abs(cx2)<70) continue;
       this.add(new THREE.BoxGeometry(12,2.9,2.6),i%2?mCorr:mRust,cx2,1.45,cz2); }
     // ── third wave — heavy plant ──
     const bfx=-470, bfz=60;                                  // blast furnace: tapered stack on legs + downcomer
@@ -1198,11 +1217,68 @@ class World {
       c.scale.y=0.38; c.position.set((rnd()-.5)*1700,230+rnd()*170,(rnd()-.5)*1700); this._root.add(c); }
   }
   // portal gates near spawn — colour = destination; fat pulsing ring, halo, 150 m sky beam, clean corridors
+  _gridTex(){ const s=512,cv=document.createElement('canvas');cv.width=cv.height=s;const x=cv.getContext('2d');
+    x.fillStyle='#10141a';x.fillRect(0,0,s,s);
+    x.strokeStyle='#1b4a5e';x.lineWidth=2;
+    for(let i=0;i<=8;i++){const q=i/8*s;x.beginPath();x.moveTo(q,0);x.lineTo(q,s);x.moveTo(0,q);x.lineTo(s,q);x.stroke();}
+    x.strokeStyle='#2f8fb0';x.lineWidth=4;x.strokeRect(0,0,s,s);
+    const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(160,160);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t; }
+  _buildSandbox(){
+    this.groundMat=new THREE.MeshStandardMaterial({map:this._gridTex(),roughness:0.9});
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),this.groundMat);
+    ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; this._root.add(ground);
+    const pad=new THREE.Mesh(new THREE.TorusGeometry(3,0.25,8,40),
+      new THREE.MeshStandardMaterial({color:0x3fe08a,emissive:0x1a6f44,emissiveIntensity:0.8}));
+    pad.rotation.x=Math.PI/2; pad.position.y=0.15; this._root.add(pad);
+    this.buildGroup=new THREE.Group(); this._root.add(this.buildGroup);
+    this.buildGroups=[]; this.buildData=[];
+    try{ const b=JSON.parse(localStorage.getItem('fpvbuild')||'[]');
+      this.buildData=b; b.forEach(it=>this._spawnItem(it)); }catch(e){ this.buildData=[]; }
+  }
+  _spawnItem(it){
+    const g=new THREE.Group(); g.position.set(it.x,0,it.z); g.rotation.y=it.ry||0;
+    const M=(c,r)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.85:r,flatShading:true,side:THREE.DoubleSide});
+    const S=(geo,c,x,y,z,solid)=>{ const m=new THREE.Mesh(geo,M(c)); m.position.set(x,y,z);
+      m.castShadow=m.receiveShadow=true; if(solid!==false) m.userData.solid=1; g.add(m); return m; };
+    switch(it.t){
+      case 'box': S(new THREE.BoxGeometry(4,4,4),0x8a6f4d,0,2,0); break;
+      case 'wall': S(new THREE.BoxGeometry(24,10,1),0x5a7fb0,0,5,0); break;
+      case 'gate': { const sz=7,t=0.5,y=2+sz/2;
+        S(new THREE.BoxGeometry(sz+t,t,t),0xd07840,0,y+sz/2,0); S(new THREE.BoxGeometry(sz+t,t,t),0xd07840,0,y-sz/2,0);
+        S(new THREE.BoxGeometry(t,sz,t),0xd07840,-sz/2,y,0); S(new THREE.BoxGeometry(t,sz,t),0xd07840,sz/2,y,0); break; }
+      case 'hoop': for(let i=0;i<8;i++){ const a=i*Math.PI/4+Math.PI/8;
+        const seg=S(new THREE.BoxGeometry(5,0.5,0.5),0x5a7fb0,Math.cos(a)*5.5,8+Math.sin(a)*5.5,0);
+        seg.rotation.z=a+Math.PI/2; } break;
+      case 'arch': for(let i=0;i<5;i++){ const a=Math.PI*(i+0.5)/5;
+        const seg=S(new THREE.BoxGeometry(7.2,0.7,0.7),0xb05548,Math.cos(a)*10,Math.sin(a)*10,0);
+        seg.rotation.z=a+Math.PI/2; } break;
+      case 'tower': { const w=7,d=5,H=26,t=0.5;
+        [[-w/2,-d/2],[w/2,-d/2],[-w/2,d/2],[w/2,d/2]].forEach(([px,pz])=>S(new THREE.BoxGeometry(t,H,t),0xb9bec2,px,H/2,pz));
+        for(let i=1;i<=5;i++){ const y=i*H/5;
+          S(new THREE.BoxGeometry(w,t,t),0xb9bec2,0,y,-d/2); S(new THREE.BoxGeometry(w,t,t),0xb9bec2,0,y,d/2);
+          S(new THREE.BoxGeometry(t,t,d),0xb9bec2,-w/2,y,0); S(new THREE.BoxGeometry(t,t,d),0xb9bec2,w/2,y,0); } break; }
+      case 'mound': { MOUNDS.push({x:it.x,z:it.z,r:12,h:5.4});
+        const m=new THREE.Mesh(new THREE.SphereGeometry(12,16,10),M(0x8a7048,0.95));
+        m.scale.y=0.45; m.castShadow=m.receiveShadow=true; g.add(m); break; }
+      case 'pole': S(new THREE.CylinderGeometry(0.35,0.35,14,8),0xb9bec2,0,7,0); break;
+    }
+    this.buildGroup.add(g); this.buildGroups.push(g);
+  }
+  addBuildItem(t,x,z,ry){ if(this.mapId!=='build') return false;
+    const it={t,x:Math.round(x*2)/2,z:Math.round(z*2)/2,ry:ry||0};
+    this.buildData.push(it); this._spawnItem(it); this._saveBuild(); this._buildColliders(); return true; }
+  removeBuildAt(i){ if(this.mapId!=='build'||i<0||i>=this.buildData.length) return;
+    this.buildData.splice(i,1); this._respawnBuild(); }
+  clearBuild(){ if(this.mapId!=='build') return; this.buildData=[]; this._respawnBuild(); }
+  _respawnBuild(){ this.buildGroups.forEach(g=>this.buildGroup.remove(g)); this.buildGroups=[]; MOUNDS.length=0;
+    this.buildData.forEach(it=>this._spawnItem(it)); this._saveBuild(); this._buildColliders(); }
+  _saveBuild(){ try{ localStorage.setItem('fpvbuild', JSON.stringify(this.buildData)); }catch(e){} }
   _addPortals(cur){
-    const info={plains:0x6fd0ff, zone:0x6fe08a, factory:0xe09a5a};
+    const info={plains:0x6fd0ff, zone:0x6fe08a, factory:0xe09a5a, build:0xc06fff};
     this.portalFx=[];
-    Object.keys(info).filter(k=>k!==cur).forEach((to,i)=>{
-      const x=i?26:-26, y=9, z=-34, r=7, c=info[to];
+    const oth=Object.keys(info).filter(k=>k!==cur);
+    oth.forEach((to,i)=>{
+      const x=(i-(oth.length-1)/2)*44, y=9, z=-34, r=7, c=info[to];
       PORTALS.push({x,y,z,r,to});
       const em=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1.3,roughness:0.3});
       const ring=new THREE.Mesh(new THREE.TorusGeometry(r,0.9,12,48),em); ring.position.set(x,y,z); this._root.add(ring);
@@ -1220,7 +1296,8 @@ class World {
   }
   _buildColliders(){ COLLIDERS.length=0; this.sc.updateMatrixWorld(true); const b=new THREE.Box3(); this.sc.traverse(o=>{ if(o.userData&&o.userData.solid){ b.setFromObject(o); if(isFinite(b.min.x)&&isFinite(b.max.x)) COLLIDERS.push({min:b.min.clone(),max:b.max.clone()}); } }); }
   render(quad){
-    const fv=quad.D.fov||120; if(this.cam.fov!==fv){ this.cam.fov=fv; this.cam.updateProjectionMatrix(); }
+    const fv=(quad.D.fov||120)+Math.min(6,(quad.spd||0)*0.09);   // subtle speed-FOV kick
+    if(Math.abs(this.cam.fov-fv)>0.05){ this.cam.fov=fv; this.cam.updateProjectionMatrix(); }
     this._up.setFromAxisAngle(this._ax,(quad.D.camAngle||20)*Math.PI/180);
     this.cam.position.copy(quad.pos); this.cam.quaternion.copy(quad.quat).multiply(this._up);
     const sh=((quad.buffet||0)*0.012 + (quad.motor||0)*0.0035 + Math.min(1,(quad.spd||0)/45)*0.004)*(this.shakeAmt==null?1:this.shakeAmt);
@@ -1290,6 +1367,11 @@ class Audio {
     const low=armed && cells && (vb/cells)<3.5;                                     // sagging pack → beeper
     this.bg.gain.setTargetAtTime(low&&(t%0.6<0.12)?0.10:0, t, 0.01);
   }
+  tone(f,dur,vol){ if(!this.ready) return; const c=this.ctx, t=c.currentTime;
+    const o=c.createOscillator(); o.type='sine'; o.frequency.value=f;
+    const g=c.createGain(); g.gain.setValueAtTime(vol||0.10,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+(dur||0.08));
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t+(dur||0.08)+0.03); }
   thud(sev){ if(!this.ready) return; const c=this.ctx, t=c.currentTime;
     const sN=c.createBufferSource(); sN.buffer=this.noise.buffer;
     const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=240;
@@ -1305,7 +1387,7 @@ class Sim {
       if(vv.shake!=null) this.view.shake=vv.shake; if(vv.con) this.view.con=vv.con; if(vv.sat) this.view.sat=vv.sat;
       if(vv.wind>0){ wind.base=vv.wind; wind.on=true; } }catch(e){}
     this.world.shakeAmt=this.view.shake; this._applyView(); $('hDrone').textContent=QUADS['thezone'].name;
-    this._tune(); this._setup(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
+    this._tune(); this._setup(); this._buildUI(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
   _tune(){
     const bind=(id,vid,fmt,fn)=>{ const s=$(id),v=$(vid); s.oninput=()=>{ fn(+s.value); v.textContent=fmt(+s.value); }; };
     this._refreshTune=()=>{ const D=this.quad.D;
@@ -1353,6 +1435,39 @@ class Sim {
       Object.assign(this.quad.D, JSON.parse(t)); this._refreshTune(); flash('📂 TUNE LOADED','#7fd0ff'); }catch(e){} };
     $('tDef').onclick=()=>{ this.quad.setProfile(this.quad.id); this._refreshTune(); flash('↺ FACTORY DEFAULTS','#7fd0ff'); };
   }
+  _buildUI(){
+    this.selChip=null;
+    document.querySelectorAll('#palette .chip').forEach(ch=>{
+      ch.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',ch.dataset.t); });
+      ch.onclick=()=>{ this.selChip=this.selChip===ch.dataset.t?null:ch.dataset.t;
+        document.querySelectorAll('#palette .chip').forEach(c=>c.classList.toggle('sel',c.dataset.t===this.selChip)); }; });
+    addEventListener('dragover',e=>e.preventDefault());
+    addEventListener('drop',e=>{ e.preventDefault(); if(!(e.target&&e.target.id==='c')) return;
+      const t=e.dataTransfer.getData('text/plain'); if(t) this._place(t,e.clientX,e.clientY); });
+    $('c').addEventListener('click',e=>{ if(this.selChip&&this.setOpen&&this.flying) this._place(this.selChip,e.clientX,e.clientY); });
+    $('c').addEventListener('contextmenu',e=>{ if(this.world.mapId!=='build'||!this.setOpen) return;
+      e.preventDefault(); const i=this._itemAt(e.clientX,e.clientY);
+      if(i>=0){ this.world.removeBuildAt(i); this.audio.tone(330,0.08); flash('✕ REMOVED','#ff6048'); } });
+    $('bClear').onclick=()=>{ if(this.world.mapId!=='build'){ flash('SANDBOX only — N to switch','#ffb04a'); return; }
+      this.world.clearBuild(); flash('▦ SANDBOX CLEARED','#ff6048'); };
+  }
+  _ndcRay(cx,cy){ this._ray=this._ray||new THREE.Raycaster(); this._ndcV=this._ndcV||new THREE.Vector2();
+    this._ndcV.set(cx/innerWidth*2-1, -(cy/innerHeight)*2+1);
+    this._ray.setFromCamera(this._ndcV,this.world.cam); return this._ray; }
+  _groundPoint(cx,cy){ const r=this._ndcRay(cx,cy), o=r.ray.origin, d=r.ray.direction;
+    if(Math.abs(d.y)<1e-4) return null; const t=-o.y/d.y;
+    if(t<0||t>1500) return null; return {x:o.x+d.x*t, z:o.z+d.z*t}; }
+  _itemAt(cx,cy){ const r=this._ndcRay(cx,cy), gs=this.world.buildGroups||[];
+    const hits=r.intersectObjects(gs,true); if(!hits.length) return -1;
+    let o=hits[0].object; while(o&&gs.indexOf(o)<0) o=o.parent;
+    return o?gs.indexOf(o):-1; }
+  _place(t,cx,cy){
+    if(this.world.mapId!=='build'){ flash('BUILDER lives in the SANDBOX — N to switch','#ffb04a'); return; }
+    const pt=this._groundPoint(cx,cy); if(!pt){ flash('aim at the floor','#ffb04a'); return; }
+    const fv=this._fwd=this._fwd||new THREE.Vector3();
+    fv.set(0,0,-1).applyQuaternion(this.quad.quat);
+    const ry=Math.round(Math.atan2(fv.x,-fv.z)/(Math.PI/2))*(Math.PI/2);   // face the pilot, axis-aligned
+    if(this.world.addBuildItem(t,pt.x,pt.z,ry)){ this.audio.tone(990,0.06); flash('+ '+t.toUpperCase(),'#3fe08a'); } }
   _applyView(){ $('c').style.filter='contrast('+this.view.con+'%) saturate('+this.view.sat+'%)'; }
   _saveView(){ try{ localStorage.setItem('fpvview', JSON.stringify({shake:this.view.shake,con:this.view.con,sat:this.view.sat,wind:wind.on?wind.base:0})); }catch(e){} }
   _loadTune(){ try{ const t=localStorage.getItem('fpvtune_'+this.quad.id); if(t) Object.assign(this.quad.D, JSON.parse(t)); }catch(e){} }
@@ -1380,12 +1495,12 @@ class Sim {
     else this.quad.pos.set(0,8,0);
     this.quad.below=false; this._pCool=2;
     if(this.setOpen) this._refreshTune();
-    flash('⊛ '+(p.to==='zone'?'ZONE FIELD':p.to==='factory'?'RUHRWERK':'TRIPPY PLAINS'),'#cfa0ff'); }
+    this.audio.tone(520,0.18,0.1); flash('⊛ '+(p.to==='zone'?'ZONE FIELD':p.to==='factory'?'RUHRWERK':p.to==='build'?'SANDBOX':'TRIPPY PLAINS'),'#cfa0ff'); }
   _setMap(id){ if(id===this.world.mapId) return;
     this.world.loadMap(id);
     const a=this.quad.armed; this.quad.reset(); this.quad.armed=a; this.inp.kt=0;
     if(this.setOpen) this._refreshTune();
-    flash(id==='zone'?'⛰ ZONE FIELD':id==='factory'?'🏭 RUHRWERK':'🌀 TRIPPY PLAINS','#7fd0ff'); }
+    flash(id==='zone'?'⛰ ZONE FIELD':id==='factory'?'🏭 RUHRWERK':id==='build'?'▦ SANDBOX':'🌀 TRIPPY PLAINS','#7fd0ff'); }
   _hasCal(){ try{ return !!localStorage.getItem('fpvcal'); }catch(e){ return false; } }
   _setup(){ const scan=()=>{ const pads=navigator.getGamepads?navigator.getGamepads():[]; let idx=-1; for(let i=0;i<pads.length;i++) if(pads[i]){idx=i;break;}
       this._gpi=idx; const on=idx>=0;
@@ -1398,7 +1513,7 @@ class Sim {
     $('btnCal').onclick=()=>{ this.inp.gpi=this._gpi; this._calibrate(()=>scan()); };
     $('tCal').onclick=()=>{ this._calibrate(()=>{ if(this.setOpen)this._refreshTune(); }); };
     $('calCancel').onclick=()=>this._cancelCal();
-    $('mapA').onclick=()=>this._setMap('plains'); $('mapB').onclick=()=>this._setMap('zone'); $('mapC').onclick=()=>this._setMap('factory'); }
+    $('mapA').onclick=()=>this._setMap('plains'); $('mapB').onclick=()=>this._setMap('zone'); $('mapC').onclick=()=>this._setMap('factory'); $('mapD').onclick=()=>this._setMap('build'); }
   _calibrate(done){
     const idx=(this.inp.gpi>=0?this.inp.gpi:this._gpi);
     const pads=()=>navigator.getGamepads?navigator.getGamepads():[];
@@ -1513,11 +1628,11 @@ class Sim {
     if(this.inp.gpSwitched){ this.inp.gpSwitched=false; flash('🎮 CONTROLLER ACTIVE','#7fd0ff'); }
     if(this.inp.toggleSet){ this.setOpen=!this.setOpen; $('set').classList.toggle('on',this.setOpen); $('legend').style.display=this.setOpen?'none':'block'; document.body.style.cursor=this.setOpen?'default':'none'; if(this.setOpen)this._refreshTune(); }
     if(this.inp.camUp||this.inp.camDn){ const D=this.quad.D; D.camAngle=Math.max(0,Math.min(55,(D.camAngle==null?20:D.camAngle)+(this.inp.camUp?2:-2))); if(this.setOpen)this._refreshTune(); flash('CAM '+Math.round(D.camAngle)+'°','#7fd0ff'); }
-    if(this.inp.arm){ this.quad.arm(true); flash(this.quad.armed?'▶ ARMED':'■ DISARMED', this.quad.armed?'#3fe08a':'#ff6048'); }
+    if(this.inp.arm){ this.quad.arm(true); this.audio.tone(this.quad.armed?880:440,0.1); flash(this.quad.armed?'▶ ARMED':'■ DISARMED', this.quad.armed?'#3fe08a':'#ff6048'); }
     if(this.inp.reset){ const a=this.quad.armed; this.quad.reset(); this.quad.armed=a; this.inp.kt=0; flash('⟲ RESET','#7fd0ff'); }
     if(this.inp.levelNow){ this.quad.levelOut(); flash('⊕ LEVEL','#7fd0ff'); }
     if(this.inp.toggleMode){ const m=this.quad.cycleMode(); flash(m==='ANGLE'?'⊕ ANGLE':'⟲ ACRO', m==='ANGLE'?'#ffd84a':'#3fe08a'); }
-    if(this.inp.nextMap){ const o=['plains','zone','factory']; this._setMap(o[(o.indexOf(this.world.mapId)+1)%3]); }
+    if(this.inp.nextMap){ const o=['plains','zone','factory','build']; this._setMap(o[(o.indexOf(this.world.mapId)+1)%4]); }
     if(this.inp.toggleQuality){ const w=this.world; w.lowQ=!w.lowQ;
       w.r.setPixelRatio(w.lowQ?1:Math.min(devicePixelRatio,1.75)); w.sun.castShadow=!w.lowQ;
       flash(w.lowQ?'▸ FAST RENDER':'◆ FULL QUALITY','#7fd0ff'); }
@@ -1548,8 +1663,8 @@ class Sim {
           const tt=(performance.now()-this.race.t0)/1000; this.race.on=false; this._gateGlow(-1);
           let best=0; try{ best=+localStorage.getItem('fpvbest')||0; }catch(e){}
           const nb=!best||tt<best; if(nb) try{ localStorage.setItem('fpvbest',tt); }catch(e){}
-          flash('🏁 '+tt.toFixed(2)+'s'+(nb?' — NEW BEST!':' · best '+best.toFixed(2)+'s'), nb?'#3fe08a':'#ffe04a'); }
-        else { this._gateGlow(this.race.i); flash('✓ '+this.race.i+' / 5','#ffe04a'); } } }
+          this.audio.tone(1760,0.16,0.15); flash('🏁 '+tt.toFixed(2)+'s'+(nb?' — NEW BEST!':' · best '+best.toFixed(2)+'s'), nb?'#3fe08a':'#ffe04a'); }
+        else { this._gateGlow(this.race.i); this.audio.tone(1320,0.07); flash('✓ '+this.race.i+' / 5','#ffe04a'); } } }
     this.world.render(this.quad); this.hud.upd(this.quad,this.inp);
     this.audio.upd(this.quad.motor, this.quad.armed, this.quad.spd, this.quad.batt, this.quad.D.cells||6);
   }
