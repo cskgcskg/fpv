@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trippy Plains v12 — FPV Freestyle</title>
+<title>Trippy Plains v13 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;}
@@ -78,6 +78,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
     <div class="tile"><div class="l">SPD</div><div class="v" id="hSpd">0</div></div>
     <div class="tile"><div class="l">ALT</div><div class="v" id="hAlt">0.0</div></div>
     <div class="tile"><div class="l">BATT</div><div class="v" id="hVolt">25.2</div></div>
+    <div class="tile"><div class="l">MAH</div><div class="v" id="hMah">0</div></div>
   </div>
 </div>
 <div id="set">
@@ -94,6 +95,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
     <div><b>M</b> Acro / Angle</div>
     <div><b>N</b> swap map</div>
     <div><b>Q</b> fast / quality</div>
+    <div><b>G</b> gate run · Zone</div>
     <div><b>1 - 8</b> swap craft</div>
     <div><b>[ &nbsp;]</b> camera angle</div>
     <div><b>TAB</b> this panel</div>
@@ -120,6 +122,8 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div class="sr"><span>Floor / bg</span><input type="range" id="tFloor" min="30" max="160" step="5"><span class="sv" id="vFloor"></span></div>
   <div class="st">MAP · N TO SWAP</div>
   <div style="display:flex;gap:6px;"><button class="btn sec" id="mapA">PLAINS</button><button class="btn sec" id="mapB">ZONE FIELD</button><button class="btn sec" id="mapC">FACTORY</button></div>
+  <div class="st">TUNE PRESET</div>
+  <div style="display:flex;gap:6px;"><button class="btn sec" id="tSave">SAVE</button><button class="btn sec" id="tLoad">LOAD</button><button class="btn sec" id="tDef">DEFAULT</button></div>
   <div class="st">CONTROLLER</div>
   <div id="tCalWrap" style="display:flex;flex-direction:column;"><button class="btn sec" id="tCal">CALIBRATE STICKS</button></div>
   <div class="small">[ / ] adjust cam · TAB to close · a golden duck nests somewhere industrial…</div>
@@ -148,7 +152,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v12 · 3 MAPS · PORTALS · 8 CRAFT</div>
+  <div class="sub">FPV FREESTYLE · v13 · GATE RUNS · TURTLE · FEEL PACK</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-8 drone &middot; M acro/angle &middot; ESC menu<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
@@ -348,7 +352,7 @@ class Quad {
     this.pos=new THREE.Vector3(0,0.4,0); this.vel=new THREE.Vector3();
     this.quat=new THREE.Quaternion(); this.angV=new THREE.Vector3();
     this.spool=0; this.armed=false; this.onGround=true; this.crashed=false; this.below=false;
-    this._stun=0; this._acc=0; this.ft=0; this._pwPhase=0;
+    this._stun=0; this._acc=0; this.ft=0; this._pwPhase=0; this.buffet=0;
     this._iterm={x:0,y:0,z:0}; this._prevAngV={x:0,y:0,z:0};
     this.alt=0.12; this.spd=0; this.gndSpd=0; this.vario=0; this.motor=0;
     this.battery.reset(); this.batt=this.battery.v; this.battPct=1; this.windSpd=0;
@@ -372,7 +376,7 @@ class Quad {
       this.pos.addScaledVector(this.vel,dt);
       this.quat.slerp(this._idq, Math.min((this.onGround?8:1.2)*dt,1));
       this.angV.multiplyScalar(1-Math.min(8*dt,1));
-      this.spool=0; this.motor=0;
+      this.spool=0; this.motor=0; this.buffet=0;
       if(overHole(this.pos.x,this.pos.z)){ this.below=this.pos.y<0; this.onGround=false; }
       else if(!this.below){ if(this.pos.y<0.4){ this.pos.y=0.4; this.onGround=true; if(this.vel.y<0)this.vel.y=0; this.vel.x*=0.85; this.vel.z*=0.85; } else this.onGround=false; }
       else if(this.pos.y>-0.4){ this.pos.y=-0.4; if(this.vel.y>0)this.vel.y=0; this.onGround=false; }
@@ -390,7 +394,7 @@ class Quad {
     const q=this.quat, qi=this._q1.copy(q).conjugate();
     // ── attitude: accel-limited rate controller (true rotational momentum) ──
     if(this._stun>0){
-      this._stun-=dt;
+      this._stun-=dt; this.buffet=1;
       this.angV.multiplyScalar(1-Math.min(3*dt,1));
       this.spool*=(1-Math.min(12*dt,1));
     } else {
@@ -474,6 +478,7 @@ class Quad {
     const rateMag=Math.hypot(this.angV.x,this.angV.z);
     // propwash mainly from VRS (flying back through wash); only mild wobble during rotation
     const wake=buf*0.9 + clamp(rateMag*0.015,0,0.22)*(sp<0.5?1:0.3);
+    this.buffet=wake;
     if(wake>0.01){ const ba=wake*5.5;
       this.angV.x+=(Math.sin(this._pwPhase)*0.6+(Math.random()-.5))*ba*dt;
       this.angV.z+=(Math.cos(this._pwPhase*1.13)*0.6+(Math.random()-.5))*ba*dt; }
@@ -526,6 +531,11 @@ class Quad {
     }
     // ── solid-object collisions (crash / bounce / rest by severity) ──
     this._collide();
+    // turtle mode: upside-down on the ground → full roll/pitch stick flips it back over
+    if(this.onGround){ const uy=this._v4.set(0,1,0).applyQuaternion(q).y;
+      if(uy<-0.35 && Math.hypot(this.angV.x,this.angV.z)<2){
+        if(Math.abs(inp.rRaw)>0.5){ this.angV.z=-Math.sign(inp.rRaw)*9; this.vel.y+=2.5; }
+        else if(Math.abs(inp.pRaw)>0.5){ this.angV.x=-Math.sign(inp.pRaw)*9; this.vel.y+=2.5; } } }
   }
   _collide(){
     const dr=0.32, p=this.pos, v=this.vel;
@@ -621,7 +631,7 @@ class Input {
       if(e.code==='KeyH') this._q.toggleHelp=true;
       if(e.code==='KeyM') this._q.toggleMode=true;
       if(e.code==='KeyV') this._q.toggleWind=true;
-      if(e.code==='KeyG') this._q.toggleLegend=true;
+      if(e.code==='KeyG') this._q.race=true;
       if(e.code==='KeyN') this._q.nextMap=true;
       if(e.code==='KeyX') this._q.levelNow=true;
       if(e.code==='KeyQ') this._q.toggleQuality=true; });
@@ -636,7 +646,7 @@ class Input {
     this.toggleSet=!!this._q.toggleSet; this.toggleHelp=!!this._q.toggleHelp;
     this.camUp=!!this._q.camUp; this.camDn=!!this._q.camDn;
     this.toggleMode=!!this._q.toggleMode; this.toggleWind=!!this._q.toggleWind;
-    this.toggleLegend=!!this._q.toggleLegend; this.nextMap=!!this._q.nextMap; this.levelNow=!!this._q.levelNow;
+    this.race=!!this._q.race; this.nextMap=!!this._q.nextMap; this.levelNow=!!this._q.levelNow;
     this.toggleQuality=!!this._q.toggleQuality; this.esc=!!this._q.esc;
     this._q={};
     let rawR=0,rawP=0,rawY=0;
@@ -735,7 +745,7 @@ class World {
       this.mapRoot.traverse(o=>{ if(o.geometry) o.geometry.dispose();
         if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
     this.mapRoot=new THREE.Group(); this.sc.add(this.mapRoot); this._root=this.mapRoot;
-    this._target=null; COLLIDERS.length=0; MOUNDS.length=0; HOLES.length=0; PORTALS.length=0; this.spinners.length=0; this.mapId=id;
+    this._target=null; COLLIDERS.length=0; MOUNDS.length=0; HOLES.length=0; PORTALS.length=0; this.spinners.length=0; this.raceGates=null; this.mapId=id;
     try{ localStorage.setItem('fpvmap',id); }catch(e){}
     if(id==='zone'){ _seed=240609;
       this.sc.background.set(0x9fc3e6); this.sc.fog.color.set(0xaccde8); this.sc.fog.near=400; this.sc.fog.far=2400;
@@ -917,7 +927,13 @@ class World {
     const gate=(x,z,sz,m,y0)=>{ const t=0.45,y=(y0||2)+sz/2;
       this.add(new THREE.BoxGeometry(sz+t,t,t),m,x,y+sz/2,z);this.add(new THREE.BoxGeometry(sz+t,t,t),m,x,y-sz/2,z);
       this.add(new THREE.BoxGeometry(t,sz,t),m,x-sz/2,y,z);this.add(new THREE.BoxGeometry(t,sz,t),m,x+sz/2,y,z); };
-    for(let i=0;i<5;i++) gate(-15+i*16,(i%2?-8:8)-70,5+(i%2)*1.5,[mOrange,mBlue,mRed][i%3]);
+    this.raceGates=[];
+    for(let i=0;i<5;i++){ const gx=-15+i*16, gz=(i%2?-8:8)-70, gs=5+(i%2)*1.5;
+      gate(gx,gz,gs,[mOrange,mBlue,mRed][i%3]);
+      const mk=new THREE.Mesh(new THREE.TorusGeometry(gs*0.62,0.18,8,24),
+        new THREE.MeshBasicMaterial({color:0xffe04a,transparent:true,opacity:0,fog:false}));
+      mk.position.set(gx,2+gs,gz); this._root.add(mk);
+      this.raceGates.push({x:gx,y:2+gs,z:gz,r:gs/2,mk}); }
     for(let i=0;i<8;i++){ const a=rnd()*6.283,r=90+rnd()*300; gate(Math.cos(a)*r,Math.sin(a)*r,5+rnd()*3,[mOrange,mBlue,mRed][i%3],2+rnd()*6); }
     const hoop=(x,y,z,Rr,ry,m)=>{ const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=ry;this._root.add(g);
       for(let i=0;i<8;i++){ const a=i*Math.PI/4+Math.PI/8;
@@ -1182,6 +1198,10 @@ class World {
     const fv=quad.D.fov||120; if(this.cam.fov!==fv){ this.cam.fov=fv; this.cam.updateProjectionMatrix(); }
     this._up.setFromAxisAngle(this._ax,(quad.D.camAngle||20)*Math.PI/180);
     this.cam.position.copy(quad.pos); this.cam.quaternion.copy(quad.quat).multiply(this._up);
+    const sh=(quad.buffet||0)*0.012 + (quad.motor||0)*0.0035 + Math.min(1,(quad.spd||0)/45)*0.004;
+    if(sh>0.0006){ if(!this._shq){ this._shq=new THREE.Quaternion(); this._she=new THREE.Euler(); }
+      this._she.set((Math.random()-.5)*sh,(Math.random()-.5)*sh,(Math.random()-.5)*sh*1.5);
+      this.cam.quaternion.multiply(this._shq.setFromEuler(this._she)); }
     this.sun.position.set(quad.pos.x+140,quad.pos.y+210,quad.pos.z+90); this.sun.target.position.copy(quad.pos); this.sun.target.updateMatrixWorld();
     for(let i=0;i<this.spinners.length;i++) this.spinners[i].rotation.z+=0.012;
     if(this.portalFx){ const tt=performance.now()*0.004;
@@ -1193,7 +1213,9 @@ function flash(t,c){ const f=$('flash'); f.textContent=t; f.style.color=c||'#3fe
 class HUD { upd(q,inp){
   $('hArm').textContent=q.armed?'ARMED':'DISARMED'; $('hArm').className='arm'+(q.armed?' on':'');
   $('hThr').textContent=Math.round(inp.t*100)+'%'; $('hSpd').textContent=Math.round(q.gndSpd*3.6); $('hAlt').textContent=q.alt.toFixed(1);
-  $('hVolt').textContent=q.batt.toFixed(1);
+  const cellV=q.batt/(q.D.cells||6), ve=$('hVolt'); ve.textContent=q.batt.toFixed(1);
+  ve.style.color=cellV>3.7?'#bfe9d2':cellV>3.5?'#ffd84a':'#ff6048';
+  $('hMah').textContent=Math.round(q.battery.mah);
   const fm=Math.floor(q.ft/60), fs=Math.floor(q.ft%60); $('hTime').textContent=fm+':'+(fs<10?'0':'')+fs;
   $('hGp').style.display=inp.gpLive?'inline':'none';
   $('thrFill').style.height=(inp.t*100)+'%';
@@ -1221,20 +1243,38 @@ class Audio {
     this.noiseGain=c.createGain(); this.noiseGain.gain.value=0.0;
     this.noise.connect(this.bp); this.bp.connect(this.noiseGain); this.noiseGain.connect(this.master);
     this.noise.start();
+    // airspeed whoosh
+    this.wn=c.createBufferSource(); this.wn.buffer=buf; this.wn.loop=true;
+    this.whp=c.createBiquadFilter(); this.whp.type='bandpass'; this.whp.frequency.value=700; this.whp.Q.value=0.5;
+    this.wg=c.createGain(); this.wg.gain.value=0;
+    this.wn.connect(this.whp); this.whp.connect(this.wg); this.wg.connect(this.master); this.wn.start();
+    // low-battery beeper
+    this.beep=c.createOscillator(); this.beep.type='square'; this.beep.frequency.value=2300;
+    this.bg=c.createGain(); this.bg.gain.value=0; this.beep.connect(this.bg); this.bg.connect(this.master); this.beep.start();
   }
   setVol(v){ this.vol=v; if(this.ready) this.master.gain.setTargetAtTime(v,this.ctx.currentTime,0.05); }
-  upd(spool, armed){ if(!this.ready) return; const t=this.ctx.currentTime, T=armed?spool:0;
+  upd(spool, armed, spd, vb, cells){ if(!this.ready) return; const t=this.ctx.currentTime, T=armed?spool:0;
     const f=70 + T*250;                                  // 70 Hz idle hum → ~320 Hz full-send whine
     this.oscs.forEach(o=> o.frequency.setTargetAtTime(f*o._mul, t, 0.03));
     this.lp.frequency.setTargetAtTime(500 + T*4200, t, 0.04);          // brighter under load
     this.oscGain.gain.setTargetAtTime(armed?(0.05+T*0.32):0, t, 0.06); // buzz level
     this.bp.frequency.setTargetAtTime(900 + T*2600, t, 0.05);
     this.noiseGain.gain.setTargetAtTime(armed?(0.02+T*0.16):0, t, 0.07); // prop wash
+    this.whp.frequency.setTargetAtTime(500+(spd||0)*28, t, 0.1);                    // wind rises & sharpens with speed
+    this.wg.gain.setTargetAtTime(Math.min(0.3,Math.pow((spd||0)/40,2)*0.3), t, 0.1);
+    const low=armed && cells && (vb/cells)<3.5;                                     // sagging pack → beeper
+    this.bg.gain.setTargetAtTime(low&&(t%0.6<0.12)?0.10:0, t, 0.01);
   }
+  thud(sev){ if(!this.ready) return; const c=this.ctx, t=c.currentTime;
+    const sN=c.createBufferSource(); sN.buffer=this.noise.buffer;
+    const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=240;
+    const g=c.createGain(); g.gain.setValueAtTime(Math.min(0.5,0.35*(sev||1)),t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+    sN.connect(f); f.connect(g); g.connect(this.master); sN.start(t); sN.stop(t+0.22); }
 }
 class Sim {
-  constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this.world=new World(); this.hud=new HUD(); this.audio=new Audio();
-    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; $('hDrone').textContent=QUADS['thezone'].name;
+  constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this._loadTune(); this.world=new World(); this.hud=new HUD(); this.audio=new Audio();
+    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; this.race={on:false,i:0,t0:0}; $('hDrone').textContent=QUADS['thezone'].name;
     this._tune(); this._setup(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
   _tune(){
     const bind=(id,vid,fmt,fn)=>{ const s=$(id),v=$(vid); s.oninput=()=>{ fn(+s.value); v.textContent=fmt(+s.value); }; };
@@ -1267,7 +1307,16 @@ class Sim {
     bind('tCam','vCam',v=>v+'°',v=>{ this.quad.D.camAngle=v; });
     bind('tVol','vVol',v=>v+'%',v=>{ this.audio.setVol(v/100); });
     bind('tFloor','vFloor',v=>v+'%',v=>{ this.world._floor=v; if(this.world.groundMat) this.world.groundMat.color.setScalar(v/100); });
+    $('tSave').onclick=()=>{ const D=this.quad.D, o={};
+      ['centerRate','maxRate','rcExpo','rate','rateY','maxAlpha','maxAlphaY','Kr','pidI','pidD','twr','mass','thrTau','thrTauDn','expo','camAngle','fov','pitchRate'].forEach(k=>{ if(D[k]!=null) o[k]=D[k]; });
+      try{ localStorage.setItem('fpvtune_'+this.quad.id, JSON.stringify(o)); flash('💾 TUNE SAVED','#3fe08a'); }catch(e){ flash('save failed','#ff6048'); } };
+    $('tLoad').onclick=()=>{ try{ const t=localStorage.getItem('fpvtune_'+this.quad.id);
+      if(!t){ flash('no saved tune','#ffb04a'); return; }
+      Object.assign(this.quad.D, JSON.parse(t)); this._refreshTune(); flash('📂 TUNE LOADED','#7fd0ff'); }catch(e){} };
+    $('tDef').onclick=()=>{ this.quad.setProfile(this.quad.id); this._refreshTune(); flash('↺ FACTORY DEFAULTS','#7fd0ff'); };
   }
+  _loadTune(){ try{ const t=localStorage.getItem('fpvtune_'+this.quad.id); if(t) Object.assign(this.quad.D, JSON.parse(t)); }catch(e){} }
+  _gateGlow(i){ const gs=this.world.raceGates; if(!gs) return; gs.forEach((g,j)=>g.mk.material.opacity=(j===i?0.85:0)); }
   _craftIcons(){
     const QS='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="3.2" cy="3.2" r="2.1"/><circle cx="12.8" cy="3.2" r="2.1"/><circle cx="3.2" cy="12.8" r="2.1"/><circle cx="12.8" cy="12.8" r="2.1"/><path d="M4.7 4.7 11.3 11.3M11.3 4.7 4.7 11.3"/></svg>';
     const HS='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 2.5h13M8 2.5v3"/><ellipse cx="7" cy="9.5" rx="4.2" ry="2.7"/><path d="M11 9.5h3.5V7.5"/></svg>';
@@ -1433,9 +1482,9 @@ class Sim {
       w.r.setPixelRatio(w.lowQ?1:Math.min(devicePixelRatio,1.75)); w.sun.castShadow=!w.lowQ;
       flash(w.lowQ?'▸ FAST RENDER':'◆ FULL QUALITY','#7fd0ff'); }
     if(this.inp.esc){ this._toMenu(); return; }
-    if(this.inp.swap && QUADS[this.inp.swap]){ this.quad.setProfile(this.inp.swap); this.quad.reset(); this.inp.kt=0; $('hDrone').textContent=QUADS[this.inp.swap].name; if(this.setOpen)this._refreshTune(); flash('⟳ '+QUADS[this.inp.swap].name,'#7fd0ff'); this._craftIcons(); }
+    if(this.inp.swap && QUADS[this.inp.swap]){ this.quad.setProfile(this.inp.swap); this._loadTune(); this.quad.reset(); this.inp.kt=0; $('hDrone').textContent=QUADS[this.inp.swap].name; if(this.setOpen)this._refreshTune(); flash('⟳ '+QUADS[this.inp.swap].name,'#7fd0ff'); this._craftIcons(); }
     this.quad.upd(dt,this.inp);
-    if(this.quad.crashed&&!this._wasCrashed) flash('✸ CRASH — X to level','#ff6048');
+    if(this.quad.crashed&&!this._wasCrashed){ flash('✸ CRASH — X to level','#ff6048'); this.audio.thud(1); }
     this._wasCrashed=this.quad.crashed;
     if(this._pCool>0) this._pCool-=dt;
     else for(let i=0;i<PORTALS.length;i++){ const p=PORTALS[i], qp=this.quad.pos;
@@ -1445,8 +1494,22 @@ class Sim {
     else if(this.world.mapId==='factory'&&this.world.egg){ const e=this.world.egg, qp=this.quad.pos;
       const ex=qp.x-e.x, ey=qp.y-e.y, ez=qp.z-e.z;
       if(ex*ex+ey*ey+ez*ez<81){ this._eggCool=4; this.quad.vel.y+=10; flash('🦆 QUACK! DUCK BOOST','#ffd84a'); } }
+    if(this.inp.race){
+      if(this.world.mapId!=='zone') flash('GATE RUN lives in ZONE FIELD — press N','#ffb04a');
+      else if(this.race.on){ this.race.on=false; this._gateGlow(-1); flash('■ RUN CANCELLED','#ff6048'); }
+      else { this.race={on:true,i:0,t0:performance.now()}; this._gateGlow(0); flash('▶ GATE RUN — 5 gates, go!','#ffe04a'); } }
+    if(this.race.on&&this.world.raceGates){ const rg=this.world.raceGates[this.race.i], qp=this.quad.pos;
+      const gx=qp.x-rg.x, gy=qp.y-rg.y, gz=qp.z-rg.z;
+      if(Math.abs(gz)<1.6 && gx*gx+gy*gy<(rg.r*0.9)*(rg.r*0.9)){
+        this.race.i++;
+        if(this.race.i>=this.world.raceGates.length){
+          const tt=(performance.now()-this.race.t0)/1000; this.race.on=false; this._gateGlow(-1);
+          let best=0; try{ best=+localStorage.getItem('fpvbest')||0; }catch(e){}
+          const nb=!best||tt<best; if(nb) try{ localStorage.setItem('fpvbest',tt); }catch(e){}
+          flash('🏁 '+tt.toFixed(2)+'s'+(nb?' — NEW BEST!':' · best '+best.toFixed(2)+'s'), nb?'#3fe08a':'#ffe04a'); }
+        else { this._gateGlow(this.race.i); flash('✓ '+this.race.i+' / 5','#ffe04a'); } } }
     this.world.render(this.quad); this.hud.upd(this.quad,this.inp);
-    this.audio.upd(this.quad.motor, this.quad.armed);
+    this.audio.upd(this.quad.motor, this.quad.armed, this.quad.spd, this.quad.batt, this.quad.D.cells||6);
   }
 }
 new Sim();
