@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trippy Plains v13 — FPV Freestyle</title>
+<title>Trippy Plains v14 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;}
@@ -96,6 +96,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
     <div><b>N</b> swap map</div>
     <div><b>Q</b> fast / quality</div>
     <div><b>G</b> gate run · Zone</div>
+    <div><b>V</b> wind on / off</div>
     <div><b>1 - 8</b> swap craft</div>
     <div><b>[ &nbsp;]</b> camera angle</div>
     <div><b>TAB</b> this panel</div>
@@ -116,10 +117,15 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div class="sr"><span>D</span><input type="range" id="tD" min="0" max="300" step="5"><span class="sv" id="vD"></span></div>
   <div class="st">CAMERA</div>
   <div class="sr"><span>Cam angle °</span><input type="range" id="tCam" min="0" max="55" step="1"><span class="sv" id="vCam"></span></div>
+  <div class="st">FEEL · WIND</div>
+  <div class="sr"><span>Cam shake %</span><input type="range" id="tShake" min="0" max="200" step="5"><span class="sv" id="vShake"></span></div>
+  <div class="sr"><span>Wind m/s</span><input type="range" id="tWind" min="0" max="12" step="0.5"><span class="sv" id="vWind"></span></div>
   <div class="st">SOUND</div>
   <div class="sr"><span>Motor volume</span><input type="range" id="tVol" min="0" max="100" step="5"><span class="sv" id="vVol"></span></div>
   <div class="st">SCENE</div>
   <div class="sr"><span>Floor / bg</span><input type="range" id="tFloor" min="30" max="160" step="5"><span class="sv" id="vFloor"></span></div>
+  <div class="sr"><span>Contrast %</span><input type="range" id="tCon" min="60" max="170" step="5"><span class="sv" id="vCon"></span></div>
+  <div class="sr"><span>Colour %</span><input type="range" id="tSat" min="0" max="220" step="5"><span class="sv" id="vSat"></span></div>
   <div class="st">MAP · N TO SWAP</div>
   <div style="display:flex;gap:6px;"><button class="btn sec" id="mapA">PLAINS</button><button class="btn sec" id="mapB">ZONE FIELD</button><button class="btn sec" id="mapC">FACTORY</button></div>
   <div class="st">TUNE PRESET</div>
@@ -152,7 +158,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v13 · GATE RUNS · TURTLE · FEEL PACK</div>
+  <div class="sub">FPV FREESTYLE · v14 · FEEL CONTROLS · RACE GEAR · COLOUR</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-8 drone &middot; M acro/angle &middot; ESC menu<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
@@ -970,6 +976,25 @@ class World {
       const f=new THREE.Mesh(tri,new THREE.MeshStandardMaterial({color:0xc8b440,roughness:0.7,side:THREE.DoubleSide}));
       f.position.set(x,5.6,z);this._root.add(f); };
     for(let i=0;i<8;i++){ const a=rnd()*6.283,r=60+rnd()*240; flag(Math.cos(a)*r,Math.sin(a)*r); }
+    // ── race & freestyle gear ──
+    const arch=(x,z,R2,m,ry)=>{ const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=ry; this._root.add(g);
+      for(let i=0;i<5;i++){ const a=Math.PI*(i+0.5)/5;
+        const seg=new THREE.Mesh(new THREE.BoxGeometry(R2*0.72,0.7,0.7),m);
+        seg.position.set(Math.cos(a)*R2,Math.sin(a)*R2,0); seg.rotation.z=a+Math.PI/2;
+        seg.castShadow=true; seg.userData.solid=1; g.add(seg); } };
+    for(let i=0;i<6;i++){ const a=i/6*Math.PI*2;                                   // 6-arch race loop
+      arch(110+Math.cos(a)*110, -170+Math.sin(a)*110, 9, [mOrange,mBlue,mRed][i%3], a+Math.PI/2); }
+    [[-90,-160],[150,60]].forEach(([gx,gz])=>{ gate(gx,gz,6,mBlue); gate(gx,gz,6,mOrange,9); });   // ladder gates
+    for(let i=0;i<5;i++){ const hx=-120+i*20;                                       // limbo hurdles
+      this.add(new THREE.BoxGeometry(10,0.4,0.4),mRed,hx,2.2,40);
+      this.add(new THREE.BoxGeometry(0.3,2.2,0.3),mSteel,hx-5,1.1,40);
+      this.add(new THREE.BoxGeometry(0.3,2.2,0.3),mSteel,hx+5,1.1,40); }
+    tower(180,-40,1.6); tower(-150,-220,1.6);                                       // dive towers
+    for(let i=0;i<7;i++) this.add(new THREE.CylinderGeometry(0.3,0.3,12,8),mSteel,-60,6,120+i*20);  // pole slalom
+    this.add(new THREE.BoxGeometry(1,14,30),mBlue,10,7,220);                        // wall-ride corridor
+    this.add(new THREE.BoxGeometry(1,14,30),mRed,30,7,250);
+    this.add(new THREE.BoxGeometry(3,40,3),mSteel,240,20,210);                      // power-loop tower
+    this.add(new THREE.BoxGeometry(16,0.8,16),mWood,240,40.4,210);
     const cm=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.85,fog:false});
     for(let i=0;i<9;i++){ const c=new THREE.Mesh(new THREE.SphereGeometry(22+rnd()*30,7,5),cm);
       c.scale.y=0.4;c.position.set((rnd()-.5)*1600,220+rnd()*180,(rnd()-.5)*1600);this._root.add(c); }
@@ -1198,7 +1223,7 @@ class World {
     const fv=quad.D.fov||120; if(this.cam.fov!==fv){ this.cam.fov=fv; this.cam.updateProjectionMatrix(); }
     this._up.setFromAxisAngle(this._ax,(quad.D.camAngle||20)*Math.PI/180);
     this.cam.position.copy(quad.pos); this.cam.quaternion.copy(quad.quat).multiply(this._up);
-    const sh=(quad.buffet||0)*0.012 + (quad.motor||0)*0.0035 + Math.min(1,(quad.spd||0)/45)*0.004;
+    const sh=((quad.buffet||0)*0.012 + (quad.motor||0)*0.0035 + Math.min(1,(quad.spd||0)/45)*0.004)*(this.shakeAmt==null?1:this.shakeAmt);
     if(sh>0.0006){ if(!this._shq){ this._shq=new THREE.Quaternion(); this._she=new THREE.Euler(); }
       this._she.set((Math.random()-.5)*sh,(Math.random()-.5)*sh,(Math.random()-.5)*sh*1.5);
       this.cam.quaternion.multiply(this._shq.setFromEuler(this._she)); }
@@ -1274,7 +1299,12 @@ class Audio {
 }
 class Sim {
   constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this._loadTune(); this.world=new World(); this.hud=new HUD(); this.audio=new Audio();
-    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; this.race={on:false,i:0,t0:0}; $('hDrone').textContent=QUADS['thezone'].name;
+    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; this.race={on:false,i:0,t0:0};
+    this.view={shake:1,con:100,sat:100};
+    try{ const vv=JSON.parse(localStorage.getItem('fpvview')||'{}');
+      if(vv.shake!=null) this.view.shake=vv.shake; if(vv.con) this.view.con=vv.con; if(vv.sat) this.view.sat=vv.sat;
+      if(vv.wind>0){ wind.base=vv.wind; wind.on=true; } }catch(e){}
+    this.world.shakeAmt=this.view.shake; this._applyView(); $('hDrone').textContent=QUADS['thezone'].name;
     this._tune(); this._setup(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
   _tune(){
     const bind=(id,vid,fmt,fn)=>{ const s=$(id),v=$(vid); s.oninput=()=>{ fn(+s.value); v.textContent=fmt(+s.value); }; };
@@ -1292,7 +1322,11 @@ class Sim {
       $('tExpo').value=Math.round(D.expo*100); $('vExpo').textContent=Math.round(D.expo*100);
       const ca=Math.round(D.camAngle==null?20:D.camAngle); $('tCam').value=ca; $('vCam').textContent=ca+'°';
       const vv=Math.round(this.audio.vol*100); $('tVol').value=vv; $('vVol').textContent=vv+'%';
-      const fb=this.world._floor==null?100:this.world._floor; $('tFloor').value=fb; $('vFloor').textContent=fb+'%'; };
+      const fb=this.world._floor==null?100:this.world._floor; $('tFloor').value=fb; $('vFloor').textContent=fb+'%';
+      const shp=Math.round(this.view.shake*100); $('tShake').value=shp; $('vShake').textContent=shp+'%';
+      const wv=wind.on?wind.base:0; $('tWind').value=wv; $('vWind').textContent=(+wv).toFixed(1);
+      $('tCon').value=this.view.con; $('vCon').textContent=this.view.con+'%';
+      $('tSat').value=this.view.sat; $('vSat').textContent=this.view.sat+'%'; };
     bind('tRate','vRate',v=>Math.round(v),v=>{const D=this.quad.D; if(D.useActual)D.maxRate=v; D.rate=v;});
     bind('tSnap','vSnap',v=>Math.round(v/1000)+'k',v=>{this.quad.D.maxAlpha=v; this.quad.D.maxAlphaY=Math.round(v*0.4);});
     bind('tPitch','vPitch',v=>Math.round(v),v=>this.quad.D.pitchRate=v);
@@ -1307,6 +1341,10 @@ class Sim {
     bind('tCam','vCam',v=>v+'°',v=>{ this.quad.D.camAngle=v; });
     bind('tVol','vVol',v=>v+'%',v=>{ this.audio.setVol(v/100); });
     bind('tFloor','vFloor',v=>v+'%',v=>{ this.world._floor=v; if(this.world.groundMat) this.world.groundMat.color.setScalar(v/100); });
+    bind('tShake','vShake',v=>v+'%',v=>{ this.view.shake=v/100; this.world.shakeAmt=this.view.shake; this._saveView(); });
+    bind('tWind','vWind',v=>(+v).toFixed(1),v=>{ if(v>0){ wind.base=v; wind.on=true; } else { wind.on=false; wind.vec.set(0,0,0); wind.spd=0; } this._saveView(); });
+    bind('tCon','vCon',v=>v+'%',v=>{ this.view.con=v; this._applyView(); this._saveView(); });
+    bind('tSat','vSat',v=>v+'%',v=>{ this.view.sat=v; this._applyView(); this._saveView(); });
     $('tSave').onclick=()=>{ const D=this.quad.D, o={};
       ['centerRate','maxRate','rcExpo','rate','rateY','maxAlpha','maxAlphaY','Kr','pidI','pidD','twr','mass','thrTau','thrTauDn','expo','camAngle','fov','pitchRate'].forEach(k=>{ if(D[k]!=null) o[k]=D[k]; });
       try{ localStorage.setItem('fpvtune_'+this.quad.id, JSON.stringify(o)); flash('💾 TUNE SAVED','#3fe08a'); }catch(e){ flash('save failed','#ff6048'); } };
@@ -1315,6 +1353,8 @@ class Sim {
       Object.assign(this.quad.D, JSON.parse(t)); this._refreshTune(); flash('📂 TUNE LOADED','#7fd0ff'); }catch(e){} };
     $('tDef').onclick=()=>{ this.quad.setProfile(this.quad.id); this._refreshTune(); flash('↺ FACTORY DEFAULTS','#7fd0ff'); };
   }
+  _applyView(){ $('c').style.filter='contrast('+this.view.con+'%) saturate('+this.view.sat+'%)'; }
+  _saveView(){ try{ localStorage.setItem('fpvview', JSON.stringify({shake:this.view.shake,con:this.view.con,sat:this.view.sat,wind:wind.on?wind.base:0})); }catch(e){} }
   _loadTune(){ try{ const t=localStorage.getItem('fpvtune_'+this.quad.id); if(t) Object.assign(this.quad.D, JSON.parse(t)); }catch(e){} }
   _gateGlow(i){ const gs=this.world.raceGates; if(!gs) return; gs.forEach((g,j)=>g.mk.material.opacity=(j===i?0.85:0)); }
   _craftIcons(){
@@ -1481,6 +1521,8 @@ class Sim {
     if(this.inp.toggleQuality){ const w=this.world; w.lowQ=!w.lowQ;
       w.r.setPixelRatio(w.lowQ?1:Math.min(devicePixelRatio,1.75)); w.sun.castShadow=!w.lowQ;
       flash(w.lowQ?'▸ FAST RENDER':'◆ FULL QUALITY','#7fd0ff'); }
+    if(this.inp.toggleWind){ const on=wind.toggle(); if(on&&wind.base<0.5) wind.base=3;
+      if(this.setOpen) this._refreshTune(); this._saveView(); flash(on?'≋ WIND ON':'≋ WIND OFF','#7fd0ff'); }
     if(this.inp.esc){ this._toMenu(); return; }
     if(this.inp.swap && QUADS[this.inp.swap]){ this.quad.setProfile(this.inp.swap); this._loadTune(); this.quad.reset(); this.inp.kt=0; $('hDrone').textContent=QUADS[this.inp.swap].name; if(this.setOpen)this._refreshTune(); flash('⟳ '+QUADS[this.inp.swap].name,'#7fd0ff'); this._craftIcons(); }
     this.quad.upd(dt,this.inp);
