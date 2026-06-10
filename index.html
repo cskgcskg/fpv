@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trippy Plains v10 — FPV Freestyle</title>
+<title>Trippy Plains v12 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;}
 #c{position:fixed;inset:0;width:100vw;height:100vh;display:block;}
+#vig{position:fixed;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse at center,transparent 60%,rgba(2,4,12,.30) 100%);}
 #hud{position:fixed;inset:0;pointer-events:none;display:none;z-index:5;}
 #hud.on{display:block;}
 #set{position:fixed;top:14px;right:14px;width:248px;max-height:94vh;overflow-y:auto;background:rgba(8,14,20,.9);border:1px solid rgba(120,200,255,.25);border-radius:8px;padding:12px 14px;z-index:8;display:none;font-size:12px;color:#cfe6ff;backdrop-filter:blur(4px);pointer-events:auto;}
@@ -66,6 +67,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </style></head>
 <body>
 <canvas id="c"></canvas>
+<div id="vig"></div>
 <div id="hud">
   <div class="cross"></div>
   <div id="top"><span id="hMode" style="color:#bfe9d2;"></span><span class="arm" id="hArm">DISARMED</span><span id="hDrone"></span><span id="hTime" style="color:#9fc4e0;">0:00</span><span id="hGp" style="display:none;">🎮</span></div>
@@ -91,13 +93,15 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
     <div><b>X</b> level / recover</div>
     <div><b>M</b> Acro / Angle</div>
     <div><b>N</b> swap map</div>
-    <div><b>1 - 7</b> swap quad</div>
+    <div><b>Q</b> fast / quality</div>
+    <div><b>1 - 8</b> swap craft</div>
     <div><b>[ &nbsp;]</b> camera angle</div>
     <div><b>TAB</b> this panel</div>
   </div>
   <div class="st">SNAPPINESS</div>
-  <div class="sr"><span>Rate °/s</span><input type="range" id="tRate" min="200" max="900" step="10"><span class="sv" id="vRate"></span></div>
-  <div class="sr"><span>Snap</span><input type="range" id="tSnap" min="20000" max="140000" step="2000"><span class="sv" id="vSnap"></span></div>
+  <div class="sr"><span>Rate °/s</span><input type="range" id="tRate" min="200" max="2000" step="10"><span class="sv" id="vRate"></span></div>
+  <div class="sr"><span>Snap</span><input type="range" id="tSnap" min="20000" max="320000" step="2000"><span class="sv" id="vSnap"></span></div>
+  <div class="sr"><span>Pitch rate °/s</span><input type="range" id="tPitch" min="180" max="2000" step="20"><span class="sv" id="vPitch"></span></div>
   <div class="st">FLIGHT · PHYSICS</div>
   <div class="sr"><span>Power (TWR)</span><input type="range" id="tTwr" min="3" max="14" step="0.5"><span class="sv" id="vTwr"></span></div>
   <div class="sr"><span>Mass / inertia g</span><input type="range" id="tMass" min="200" max="1400" step="10"><span class="sv" id="vMass"></span></div>
@@ -118,9 +122,9 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div style="display:flex;gap:6px;"><button class="btn sec" id="mapA">PLAINS</button><button class="btn sec" id="mapB">ZONE FIELD</button><button class="btn sec" id="mapC">FACTORY</button></div>
   <div class="st">CONTROLLER</div>
   <div id="tCalWrap" style="display:flex;flex-direction:column;"><button class="btn sec" id="tCal">CALIBRATE STICKS</button></div>
-  <div class="small">[ / ] adjust cam · TAB to close</div>
+  <div class="small">[ / ] adjust cam · TAB to close · a golden duck nests somewhere industrial…</div>
 </div>
-<div id="legend"><b>TAB</b> controls &amp; tune</div>
+<div id="legend"><b>TAB</b> controls &amp; tune · <b>ESC</b> menu<div id="craftIcons" style="display:flex;gap:6px;margin-top:5px;"></div></div>
 <div id="flash"></div>
 <div id="cal">
   <div class="ct">DJI / GAMEPAD CALIBRATION</div>
@@ -144,10 +148,10 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v10 · 3 MAPS · PORTALS · 7 CRAFT</div>
+  <div class="sub">FPV FREESTYLE · v12 · 3 MAPS · PORTALS · 8 CRAFT</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
-  <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-7 drone &middot; M acro/angle<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
+  <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-8 drone &middot; M acro/angle &middot; ESC menu<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -251,6 +255,19 @@ const QUADS = {
     cells:6, capMah:3300, Rint:0.020, maxAmps:90,
     windScale:0.9, angleMax:45,
   },
+  m3x: {
+    name:'MASTER 3.5', tag:'3.5\" Freestyle · Master-3X class',
+    desc:'Sub-400g 3.5\" on 4S — nimble and punchy, quick to snap, light in the wind.',
+    mass:0.365, twr:7.0, k:2.3,
+    useActual:true, centerRate:200, maxRate:670, rcExpo:0.55,
+    rate:670, rateY:670,
+    maxAlpha:30000, maxAlphaY:12000,
+    Kr:130, thrTau:0.020, thrTauDn:0.045,
+    dxy:0.045, dy:0.050,
+    expo:0.40, camAngle:25, fov:120,
+    cells:4, capMah:650, Rint:0.035, maxAmps:60,
+    windScale:1.8, angleMax:55,
+  },
 };
 
 /* ═══════════════ BATTERY — 6S sag model (punch fades under load) ═══════════════ */
@@ -269,9 +286,9 @@ function overHole(x,z){ for(const h of HOLES){ const dx=x-h.x, dz=z-h.z, ir=h.r-
 
 // Betaflight "ACTUAL" rates (deg/s) — matches The Zone's rate model.
 //   D.centerRate (deg/s at low stick), D.maxRate (deg/s at full), D.rcExpo (0..1)
-function actualRate(stick, D){
+function actualRate(stick, D, maxO){
   const s=Math.max(-1,Math.min(1,stick||0)), a=Math.abs(s), e=(D.rcExpo==null?0.57:D.rcExpo);
-  const center=(D.centerRate==null?210:D.centerRate), max=(D.maxRate==null?700:D.maxRate);
+  const center=(D.centerRate==null?210:D.centerRate), max=(maxO!=null?maxO:(D.maxRate==null?700:D.maxRate));
   const move=Math.max(0, max-center);
   const expof = a*(s*s*s*e + s*(1-e));     // BF actual expo term
   return s*center + move*expof;            // deg/s
@@ -396,10 +413,10 @@ class Quad {
         spX=clamp(2*this._qe.x*angleP, -mR, mR);
         spZ=clamp(2*this._qe.z*angleP, -mR, mR);
       } else if(D.useActual){                           // ACRO — Betaflight "Actual" rates (matches The Zone)
-        spZ=-actualRate(inp.rRaw, D)*d2r; spX=-actualRate(inp.pRaw, D)*d2r; spY=-actualRate(inp.yRaw, D)*d2r;
+        spZ=-actualRate(inp.rRaw, D)*d2r; spX=-actualRate(inp.pRaw, D, D.pitchRate)*d2r; spY=-actualRate(inp.yRaw, D)*d2r;
       } else {                                           // ACRO — legacy rate × expo model
         const rm=(D.rollMul==null?1.0:D.rollMul);
-        spZ=-inp.r*D.rate*rm*d2r; spX=-inp.p*D.rate*d2r;
+        spZ=-inp.r*D.rate*rm*d2r; spX=-inp.p*(D.pitchRate||D.rate)*d2r;
       }
       // ── rate PID (P=Kr, I=pidI, D=pidD); defaults I=0,D=0 reproduce the base feel ──
       // authority: quad = mixer saturation w/ air-mode floor; heli = cyclic ∝ headspeed²
@@ -414,7 +431,8 @@ class Quad {
         const dterm=Kd*(this.angV[ax]-pa[ax])/dt;
         const aa=clamp(e*Kp + it[ax] - dterm, -lim, lim);
         this.angV[ax]+=aa*dt; pa[ax]=this.angV[ax]; };
-      stepAx('z',spZ,mA); stepAx('x',spX,mA); stepAx('y',spY,mAy);
+      const baseR=D.useActual?D.maxRate:D.rate, mAx=mA*Math.max(1,(D.pitchRate||baseR)/baseR);
+      stepAx('z',spZ,mA); stepAx('x',spX,mAx); stepAx('y',spY,mAy);
       // inertia cross-coupling (Euler ω×Iω, Iy≈2Ix): yaw+roll bleeds into pitch — the PID has to fight it
       const cwx=this.angV.x, cwy=this.angV.y, kc=D.heli?1.3:0.55;
       this.angV.x+=kc*cwy*this.angV.z*dt; this.angV.z-=kc*cwx*cwy*dt;
@@ -595,6 +613,8 @@ class Input {
       if(e.code==='Digit5') this._q.swap='wasp';
       if(e.code==='Digit6') this._q.swap='lr7';
       if(e.code==='Digit7') this._q.swap='heli';
+      if(e.code==='Digit8') this._q.swap='m3x';
+      if(e.code==='Escape') this._q.esc=true;
       if(e.code==='Tab') this._q.toggleSet=true;
       if(e.code==='BracketLeft') this._q.camDn=true;
       if(e.code==='BracketRight') this._q.camUp=true;
@@ -617,7 +637,7 @@ class Input {
     this.camUp=!!this._q.camUp; this.camDn=!!this._q.camDn;
     this.toggleMode=!!this._q.toggleMode; this.toggleWind=!!this._q.toggleWind;
     this.toggleLegend=!!this._q.toggleLegend; this.nextMap=!!this._q.nextMap; this.levelNow=!!this._q.levelNow;
-    this.toggleQuality=!!this._q.toggleQuality;
+    this.toggleQuality=!!this._q.toggleQuality; this.esc=!!this._q.esc;
     this._q={};
     let rawR=0,rawP=0,rawY=0;
     // acquire a pad every frame (index can drift / pad can sleep mid-session)
@@ -669,7 +689,7 @@ class World {
   constructor(){
     this.r=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true,powerPreference:'high-performance'});
     this.r.setSize(innerWidth,innerHeight); this.r.setPixelRatio(Math.min(devicePixelRatio,1.75));
-    this.r.outputEncoding=THREE.sRGBEncoding; this.r.toneMapping=THREE.ACESFilmicToneMapping; this.r.toneMappingExposure=1.0;
+    this.r.outputEncoding=THREE.sRGBEncoding; this.r.toneMapping=THREE.ACESFilmicToneMapping; this.r.toneMappingExposure=1.06;
     this.r.shadowMap.enabled=true; this.r.shadowMap.type=THREE.PCFSoftShadowMap;
     this.sc=new THREE.Scene();
     this.sc.background=new THREE.Color(0xbccad6);
@@ -684,8 +704,7 @@ class World {
     // cool fill from below to light the mirrored "Inception" underground level
     const under=new THREE.DirectionalLight(0x7fa8d8, 0.6); under.position.set(-120,-260,-80); this.sc.add(under); this.sc.add(under.target);
     this.spinners=[]; this.mapId=null;
-    let m0='plains'; try{ m0=localStorage.getItem('fpvmap')||'plains'; }catch(e){}
-    this.loadMap(m0==='zone'?'zone':'plains');
+    this.loadMap('plains');   // default map — Trippy Plains
     addEventListener('resize',()=>{this.cam.aspect=innerWidth/innerHeight;this.cam.updateProjectionMatrix();this.r.setSize(innerWidth,innerHeight);});
   }
   add(geo,mat,x,y,z,solid){ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; if(solid!==false) m.userData.solid=1; (this._target||this._root).add(m); return m; }
@@ -705,20 +724,31 @@ class World {
     g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
     return g;
   }
+  _sky(top,bot){ const cv=document.createElement('canvas'); cv.width=16; cv.height=256;
+    const x=cv.getContext('2d'), g=x.createLinearGradient(0,0,0,256);
+    g.addColorStop(0,top); g.addColorStop(1,bot); x.fillStyle=g; x.fillRect(0,0,16,256);
+    const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding;
+    return new THREE.Mesh(new THREE.SphereGeometry(2700,24,12),
+      new THREE.MeshBasicMaterial({map:t,side:THREE.BackSide,fog:false,depthWrite:false})); }
   loadMap(id){
-    if(this.mapRoot) this.sc.remove(this.mapRoot);
+    if(this.mapRoot){ this.sc.remove(this.mapRoot);   // free GPU memory from the previous map
+      this.mapRoot.traverse(o=>{ if(o.geometry) o.geometry.dispose();
+        if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
     this.mapRoot=new THREE.Group(); this.sc.add(this.mapRoot); this._root=this.mapRoot;
     this._target=null; COLLIDERS.length=0; MOUNDS.length=0; HOLES.length=0; PORTALS.length=0; this.spinners.length=0; this.mapId=id;
     try{ localStorage.setItem('fpvmap',id); }catch(e){}
     if(id==='zone'){ _seed=240609;
       this.sc.background.set(0x9fc3e6); this.sc.fog.color.set(0xaccde8); this.sc.fog.near=400; this.sc.fog.far=2400;
+      this.sun.color.set(0xfff2dd); this._root.add(this._sky('#6f9fd8','#dceaf2'));
       this._buildZone(); }
     else if(id==='factory'){ _seed=777777;
       this.sc.background.set(0xb8b4ac); this.sc.fog.color.set(0xc0bbb0); this.sc.fog.near=350; this.sc.fog.far=2200;
+      this.sun.color.set(0xffe2bc); this._root.add(this._sky('#8e96a4','#d8c8a8'));
       this._buildFactory(); }
     else{ _seed=101010;
       this.sc.background.set(0xbccad6); this.sc.fog.color.set(0xc6d2dc); this.sc.fog.near=450; this.sc.fog.far=2600;
       HOLES.push({x:60,z:-60,r:30},{x:450,z:450,r:38});
+      this.sun.color.set(0xfff4e2); this._root.add(this._sky('#7fa8d0','#e8e0d0'));
       this._buildPlains(); }
     this._addPortals(id);
     this._buildColliders();
@@ -742,10 +772,14 @@ class World {
     // ── everything that gets mirrored underground lives in this.field ──
     this.field=new THREE.Group(); this._root.add(this.field); this._target=this.field;
     // ── freestyle field (Zone-inspired) — three size tiers, DOUBLED counts ──
-    const place=(fn,n,rmin,rmax)=>{ for(let i=0;i<n;i++){ const a=rnd()*Math.PI*2, r=rmin+rnd()*(rmax-rmin); fn(Math.cos(a)*r, Math.sin(a)*r); } };  // seeded → fixed map
+    const pclear=(x,z)=>Math.hypot(x+26,z+34)>26 && Math.hypot(x-26,z+34)>26;   // portal corridors stay clean
+    const place=(fn,n,rmin,rmax)=>{ for(let i=0;i<n;i++){ let x=0,z=0,k=0;
+      do{ const a=rnd()*Math.PI*2, r=rmin+rnd()*(rmax-rmin); x=Math.cos(a)*r; z=Math.sin(a)*r; }while(!pclear(x,z)&&k++<8);
+      if(pclear(x,z)) fn(x,z); } };  // seeded → fixed map
     // ── surfable dirt mounds (best of Zone Field) — jump cluster + scattered, mirrored underground too ──
     const mSand=new THREE.MeshStandardMaterial({color:0x8a7048,roughness:0.95,flatShading:true});
-    const mound=(x,z,r)=>{ for(const h of HOLES){ if(Math.hypot(x-h.x,z-h.z)<h.r+r+6) return; }
+    const mound=(x,z,r)=>{ if(!pclear(x,z)) return;
+      for(const h of HOLES){ if(Math.hypot(x-h.x,z-h.z)<h.r+r+6) return; }
       MOUNDS.push({x,z,r,h:r*0.45});
       const g=new THREE.Mesh(new THREE.SphereGeometry(r,18,12),mSand);
       g.scale.y=0.45; g.position.set(x,0,z); g.castShadow=g.receiveShadow=true; this.field.add(g); };
@@ -773,7 +807,7 @@ class World {
     place((x,z)=>this._squareGates(x,z,3),8,180, 460);
     place((x,z)=>this._pennant(x,z,3),   8, 160, 470);
     // ── long curving square TUNNELS to fly through horizontally ──
-    this._tunnel(-50,-30, 0.4, 18);
+    this._tunnel(-66,-6, 0.4, 18);
     this._tunnel( 70, 40, 2.5, 20);
     this._tunnel(-90, 70, 4.1, 16);
     this._tunnel( 40,-90, 1.2, 18);
@@ -900,7 +934,7 @@ class World {
     const rail=(x,z,ax)=>{ const L=24;
       this.add(new THREE.BoxGeometry(ax?L:0.3,0.3,ax?0.3:L),mSteel,x,1.1,z);
       for(let i=-1;i<=1;i++) this.add(new THREE.BoxGeometry(0.3,1.1,0.3),mSteel,x+(ax?i*L/2.2:0),0.55,z+(ax?0:i*L/2.2)); };
-    rail(10,-40,true);rail(-50,10,false);rail(80,30,true);
+    rail(-6,-52,true);rail(-50,10,false);rail(80,30,true);
     const tree=(x,z,sc)=>{ this.add(new THREE.CylinderGeometry(0.3*sc,0.45*sc,3*sc,7),mTrunk,x,1.5*sc,z);
       this.add(new THREE.ConeGeometry(2.4*sc,5*sc,8),mLeaf,x,5.5*sc,z);
       this.add(new THREE.ConeGeometry(1.7*sc,3.6*sc,8),mLeaf,x,8.2*sc,z,false); };
@@ -1001,23 +1035,147 @@ class World {
     this._pipe([[-300,14,-40],[-180,20,10],[-40,12,60],[100,24,30],[240,16,-30]],6.5,0x8a5a3a);
     this._pipe([[-60,30,220],[40,18,140],[140,26,80],[260,14,140],[360,22,240]],7,0x6e7076);
     // debris crates
-    for(let i=0;i<14;i++){ const a=rnd()*6.283,r=40+rnd()*260;
-      this.add(new THREE.BoxGeometry(2+rnd()*4,2+rnd()*3,2+rnd()*4),i%2?mRust:mDark,Math.cos(a)*r,1.5,Math.sin(a)*r); }
+    for(let i=0;i<44;i++){ const a=rnd()*6.283,r=40+rnd()*260, ddx=Math.cos(a)*r, ddz=Math.sin(a)*r;
+      if(Math.hypot(ddx+26,ddz+34)<26||Math.hypot(ddx-26,ddz+34)<26) continue;
+      this.add(new THREE.BoxGeometry(2+rnd()*4,2+rnd()*3,2+rnd()*4),i%2?mRust:mDark,ddx,1.5,ddz); }
+    // ── tank farm + bund wall ──
+    for(let i=0;i<6;i++){ const txx=-340+(i%3)*22, tzz=40+((i/3)|0)*22;
+      this.add(new THREE.CylinderGeometry(7,7,11,14),i%2?mCorr:mRust,txx,5.5,tzz);
+      this.add(new THREE.CylinderGeometry(7.2,7.2,0.8,14),mDark,txx,11.3,tzz,false); }
+    this.add(new THREE.BoxGeometry(74,1.5,1),mConc,-318,0.75,16); this.add(new THREE.BoxGeometry(74,1.5,1),mConc,-318,0.75,86);
+    this.add(new THREE.BoxGeometry(1,1.5,71),mConc,-355,0.75,51); this.add(new THREE.BoxGeometry(1,1.5,71),mConc,-281,0.75,51);
+    // ── silo battery + roof gallery ──
+    for(let i=0;i<5;i++) this.add(new THREE.CylinderGeometry(4,4,28,12),mConc,30+i*9.5,14,-200);
+    this.add(new THREE.BoxGeometry(48,3,6),mRust,49,29.5,-200);
+    // ── rail spur + hopper wagons ──
+    this.add(new THREE.BoxGeometry(420,0.4,0.5),mDark,-20,0.25,-301,false);
+    this.add(new THREE.BoxGeometry(420,0.4,0.5),mDark,-20,0.25,-297,false);
+    for(let i=0;i<12;i++){ const wx=-150+i*24;
+      this.add(new THREE.BoxGeometry(9,3.5,4),i%2?mRust:mCorr,wx,2.8,-299);
+      this.add(new THREE.BoxGeometry(7,1.2,3),mDark,wx,0.8,-299); }
+    // ── transmission pylons + sagging lines ──
+    const pylon=(x,z)=>{ this.add(new THREE.BoxGeometry(2.4,44,2.4),mDark,x,22,z);
+      this.add(new THREE.BoxGeometry(14,1,1),mDark,x,34,z); this.add(new THREE.BoxGeometry(10,1,1),mDark,x,40,z); };
+    pylon(-420,120); pylon(-420,0); pylon(-420,-120);
+    const wm2=new THREE.LineBasicMaterial({color:0x222222});
+    for(let sp=0;sp<2;sp++) [[-6,34],[6,34],[-4,40],[4,40]].forEach(([ox,hh])=>{ const pts=[];
+      for(let j=0;j<=8;j++){ const t=j/8; pts.push(new THREE.Vector3(-420+ox,hh-Math.sin(Math.PI*t)*2.5,120-120*sp-120*t)); }
+      this._root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),wm2)); });
+    // ── pipe rack, west yard ──
+    for(let i=0;i<=10;i++){ const rx=-260+i*20;
+      this.add(new THREE.BoxGeometry(0.6,6,0.6),mDark,rx,3,-12); this.add(new THREE.BoxGeometry(0.6,6,0.6),mDark,rx,3,-6);
+      this.add(new THREE.BoxGeometry(0.6,0.6,7),mDark,rx,6.2,-9); }
+    [[6.9,0x8a5a3a],[7.7,0x6e7076],[8.5,0x7d4636]].forEach(([hh,cc])=>{ const pp=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,210,8),
+      new THREE.MeshStandardMaterial({color:cc,roughness:0.6,metalness:0.3}));
+      pp.rotation.z=Math.PI/2; pp.position.set(-160,hh,-9); this._root.add(pp); });
+    // ── extra stacks, links, second crane, pit coal, cable spools ──
+    chim(-240,120,85,4); chim(80,-240,75,3.5);
+    bridge(-200,16,40, -80,30,-54); bridge(49,31,-196, 120,18,-44);
+    crane(160,300,50);
+    heap(330,290,12); heap(400,360,14); heap(355,265,10);
+    [[-30,140],[90,120],[-150,-60]].forEach(([sx,sz])=>{ const reel=new THREE.Mesh(new THREE.CylinderGeometry(3,3,2,12),mRust);
+      reel.rotation.z=Math.PI/2; reel.position.set(sx,3,sz); reel.castShadow=true; this._root.add(reel); });
+    // ── THE BLOCK — 10-storey empty shell: window bands, one slab bay open per floor, open gables.
+    //    Designed once, stamped three times. Shared geometries → cheap to load & draw. ──
+    const GEO={}; const bx=(w,h,d)=>{ const k=w+'|'+h+'|'+d; return GEO[k]||(GEO[k]=new THREE.BoxGeometry(w,h,d)); };
+    const solidM=(g,m,x,y,z)=>{ const o=new THREE.Mesh(g,m); o.position.set(x,y,z);
+      o.castShadow=o.receiveShadow=true; o.userData.solid=1; this._root.add(o); return o; };
+    const tower10=(tx,tz,S)=>{ S=S||1; const FH=4.2*S, FL=10, H=FH*FL;   // S=1: 36×24×42 m · S=3: 108×72×126 m
+      [-15,-5,5,15].forEach(cx=>[-9,9].forEach(cz=>solidM(bx(0.8*S,H,0.8*S),mConc,tx+cx*S,H/2,tz+cz*S)));
+      [-15,15].forEach(cx=>solidM(bx(0.8*S,H,0.8*S),mConc,tx+cx*S,H/2,tz));
+      solidM(bx(5*S,H,5*S),mConc,tx+13*S,H/2,tz+6*S);                     // stair core
+      for(let f=1;f<=FL;f++){ const y=f*FH;
+        if(f===5||f===6) continue;            // floors 5–6 fully absent → horizontal hole through middle AND sides
+        const hole=f%3, hole2=(S>1)?1:-1;     // mega: centre bay always open → full-height vertical drop shaft
+        for(let i=0;i<3;i++){ if(i===hole||i===hole2) continue; solidM(bx(12*S,0.5*S,24*S),mConc,tx+(-12+i*12)*S,y,tz); }
+        [-12,12].forEach(oz=>solidM(bx(36*S,1.1*S,0.4*S),mCorr,tx,y+0.85*S,tz+oz*S)); }  // window bands
+      for(let i=0;i<5;i++) solidM(bx(2.5*S,2*S,2.5*S),mRust,tx+(-10+rnd()*20)*S,(1+(rnd()*FL|0))*FH+1.3*S,tz+(-7+rnd()*14)*S); };
+    tower10(-320,-60); tower10(220,150); tower10(-60,-330);              // originals — now holed through the middle
+    tower10(-380,300,3); tower10(420,-280,3); tower10(0,420,3);          // MEGA BLOCKS — 3× scale, drop shaft + through-gap
+    // ── second wave — doubled industry ──
+    chim(-340,-180,95,4.5); chim(460,80,105,5); chim(-40,-420,88,4); chim(240,-340,70,3.5); chim(-460,-40,80,4); chim(140,340,90,4);
+    sqChim(-200,-260,70,10);
+    wh(-320,-260,80,32,15); wh(300,40,70,28,13); wh(-120,300,90,36,17);
+    bridge(-380,60,300, -280,30,186); bridge(420,40,-280, 330,60,-80); bridge(-30,28,-120, 30,28,-120);
+    crane(-160,200,55);
+    for(let i=0;i<6;i++){ const txx=300+(i%3)*22, tzz=-160+((i/3)|0)*22;
+      this.add(new THREE.CylinderGeometry(7,7,11,14),i%2?mRust:mCorr,txx,5.5,tzz);
+      this.add(new THREE.CylinderGeometry(7.2,7.2,0.8,14),mDark,txx,11.3,tzz,false); }
+    for(let i=0;i<5;i++) this.add(new THREE.CylinderGeometry(4,4,28,12),mConc,-264+i*9.5,14,260);
+    this.add(new THREE.BoxGeometry(48,3,6),mRust,-245,29.5,260);
+    pylon(-420,240); pylon(-420,-240);
+    for(const sp of [2,3]) [[-6,34],[6,34],[-4,40],[4,40]].forEach(([ox,hh])=>{ const pts=[];
+      for(let j=0;j<=8;j++){ const t=j/8; pts.push(new THREE.Vector3(-420+ox,hh-Math.sin(Math.PI*t)*2.5,(sp===2?240:-120)-120*t)); }
+      this._root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),wm2)); });
+    heap(-420,-300,26); heap(440,300,30); heap(200,-420,22); heap(-200,420,24);
+    [[260,200],[-260,-120],[60,-160]].forEach(([sx,sz])=>{ const reel=new THREE.Mesh(new THREE.CylinderGeometry(3,3,2,12),mRust);
+      reel.rotation.z=Math.PI/2; reel.position.set(sx,3,sz); reel.castShadow=true; this._root.add(reel); });
+    this._pipe([[-420,20,260],[-300,28,180],[-160,16,120],[0,26,180],[140,18,260]],6,0x9a948a);
+    this._pipe([[420,16,60],[300,26,-40],[160,14,-120],[20,22,-210],[-120,16,-260]],6.5,0xb05548);
+    for(let i=0;i<6;i++){ const a=rnd()*6.283,r=80+rnd()*320, cx2=Math.cos(a)*r, cz2=Math.sin(a)*r;
+      if(Math.hypot(cx2+26,cz2+34)<26||Math.hypot(cx2-26,cz2+34)<26) continue;
+      this.add(new THREE.BoxGeometry(12,2.9,2.6),i%2?mCorr:mRust,cx2,1.45,cz2); }
+    // ── third wave — heavy plant ──
+    const bfx=-470, bfz=60;                                  // blast furnace: tapered stack on legs + downcomer
+    this.add(new THREE.CylinderGeometry(7,10,18,12),mRust,bfx,11,bfz);
+    this.add(new THREE.CylinderGeometry(4.5,7,14,12),mRust,bfx,27,bfz);
+    this.add(new THREE.CylinderGeometry(2.5,4.5,10,10),mDark,bfx,39,bfz);
+    [[-8,-8],[8,-8],[-8,8],[8,8]].forEach(([a,b])=>this.add(new THREE.BoxGeometry(1.2,14,1.2),mDark,bfx+a,7,bfz+b));
+    const dc=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.4,30,8),mDark);
+    dc.rotation.z=0.6; dc.position.set(bfx+14,26,bfz); dc.castShadow=true; this._root.add(dc);
+    this.add(new THREE.CylinderGeometry(1.2,1.6,62,10),mDark,520,31,-60);   // flare stack
+    const fl=new THREE.Mesh(new THREE.SphereGeometry(2.6,10,8),new THREE.MeshBasicMaterial({color:0xff9a3a}));
+    fl.position.set(520,64,-60); this._root.add(fl);
+    for(let i=0;i<8;i++) this.add(new THREE.BoxGeometry(9,16,14),i%2?mBrick:mRust,-20+i*15,8,330);   // coke-oven battery
+    this.add(new THREE.BoxGeometry(124,2,16),mDark,32.5,17,330);
+    bridge(-20,4,-244, 30,28,-204);                          // conveyor incline up to the silo gallery
+    [[-150,-150],[-190,-170]].forEach(([px,pz])=>{           // settling ponds
+      const pond=new THREE.Mesh(new THREE.CircleGeometry(14,24),new THREE.MeshStandardMaterial({color:0x3a4a4e,roughness:0.25,metalness:0.4}));
+      pond.rotation.x=-Math.PI/2; pond.position.set(px,0.08,pz); this._root.add(pond);
+      this.add(new THREE.BoxGeometry(30,1,1),mConc,px,0.5,pz-15); this.add(new THREE.BoxGeometry(30,1,1),mConc,px,0.5,pz+15);
+      this.add(new THREE.BoxGeometry(1,1,30),mConc,px-15,0.5,pz); this.add(new THREE.BoxGeometry(1,1,30),mConc,px+15,0.5,pz); });
+    for(let i=0;i<12;i++) this.add(new THREE.BoxGeometry(1.5+rnd()*3,1+rnd()*2.5,1.5+rnd()*3),i%2?mDark:mRust,210+rnd()*60,1.2,-100+rnd()*50);  // scrap yard
+    heap(205,-65,9); heap(250,-110,11);
+    this.add(new THREE.BoxGeometry(0.8,1.4,200),mConc,366,0.7,-20);          // cooling-water channel
+    this.add(new THREE.BoxGeometry(0.8,1.4,200),mConc,374,0.7,-20);
+    const wat=new THREE.Mesh(new THREE.BoxGeometry(7,0.15,198),new THREE.MeshStandardMaterial({color:0x3f6a72,roughness:0.15,metalness:0.5}));
+    wat.position.set(370,0.5,-20); this._root.add(wat);
+    // ── 🥚 the GOLDEN DUCK nests on the gas-holder dome — touch it for a boost ──
+    const mGold=new THREE.MeshStandardMaterial({color:0xe8c84a,emissive:0x6a5210,emissiveIntensity:0.5,roughness:0.3,metalness:0.7});
+    const duck=new THREE.Group(); duck.position.set(-280,46,180); this._root.add(duck);
+    const dBody=new THREE.Mesh(new THREE.SphereGeometry(3,14,10),mGold); dBody.scale.set(1.3,1,1); duck.add(dBody);
+    const dHead=new THREE.Mesh(new THREE.SphereGeometry(1.7,12,9),mGold); dHead.position.set(2.6,3,0); duck.add(dHead);
+    const dBeak=new THREE.Mesh(new THREE.ConeGeometry(0.7,1.6,8),new THREE.MeshStandardMaterial({color:0xd06a2a,roughness:0.5}));
+    dBeak.rotation.z=-Math.PI/2; dBeak.position.set(4.6,2.8,0); duck.add(dBeak);
+    duck.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
+    const gb=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,80,8,1,true),
+      new THREE.MeshBasicMaterial({color:0xffd84a,transparent:true,opacity:0.12,fog:false,depthWrite:false}));
+    gb.position.set(-280,86,180); this._root.add(gb);
+    this.egg={x:-280,y:46,z:180};
     const cm=new THREE.MeshBasicMaterial({color:0xd8d6d0,transparent:true,opacity:0.8,fog:false});
     for(let i=0;i<8;i++){ const c=new THREE.Mesh(new THREE.SphereGeometry(26+rnd()*32,7,5),cm);
       c.scale.y=0.38; c.position.set((rnd()-.5)*1700,230+rnd()*170,(rnd()-.5)*1700); this._root.add(c); }
   }
-  // two glowing rings near spawn in every map — fly through to jump to that map (colour = destination)
+  // portal gates near spawn — colour = destination; fat pulsing ring, halo, 150 m sky beam, clean corridors
   _addPortals(cur){
     const info={plains:0x6fd0ff, zone:0x6fe08a, factory:0xe09a5a};
+    this.portalFx=[];
     Object.keys(info).filter(k=>k!==cur).forEach((to,i)=>{
-      const x=i?22:-22, y=8, z=-30, r=6;
+      const x=i?26:-26, y=9, z=-34, r=7, c=info[to];
       PORTALS.push({x,y,z,r,to});
-      const m=new THREE.MeshStandardMaterial({color:info[to],emissive:info[to],emissiveIntensity:0.7,roughness:0.4});
-      const ring=new THREE.Mesh(new THREE.TorusGeometry(r,0.5,10,40),m); ring.position.set(x,y,z); this._root.add(ring);
-      const disc=new THREE.Mesh(new THREE.CircleGeometry(r-0.5,28),
-        new THREE.MeshBasicMaterial({color:info[to],transparent:true,opacity:0.18,side:THREE.DoubleSide}));
-      disc.position.set(x,y,z); this._root.add(disc); });
+      const em=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1.3,roughness:0.3});
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(r,0.9,12,48),em); ring.position.set(x,y,z); this._root.add(ring);
+      const halo=new THREE.Mesh(new THREE.TorusGeometry(r+1.8,0.22,8,48),em); halo.position.set(x,y,z); this._root.add(halo);
+      const disc=new THREE.Mesh(new THREE.CircleGeometry(r-0.6,30),
+        new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.34,side:THREE.DoubleSide,fog:false,depthWrite:false}));
+      disc.position.set(x,y,z); this._root.add(disc);
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,150,10,1,true),
+        new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.15,side:THREE.DoubleSide,fog:false,depthWrite:false}));
+      beam.position.set(x,75,z); this._root.add(beam);
+      [-r-1.2,r+1.2].forEach(ox=>{ const post=new THREE.Mesh(new THREE.BoxGeometry(0.7,y+r,0.7),em);
+        post.position.set(x+ox,(y+r)/2,z); this._root.add(post); });
+      this.portalFx.push({m:ring,ph:i*1.9},{m:disc,ph:i*1.9});
+    });
   }
   _buildColliders(){ COLLIDERS.length=0; this.sc.updateMatrixWorld(true); const b=new THREE.Box3(); this.sc.traverse(o=>{ if(o.userData&&o.userData.solid){ b.setFromObject(o); if(isFinite(b.min.x)&&isFinite(b.max.x)) COLLIDERS.push({min:b.min.clone(),max:b.max.clone()}); } }); }
   render(quad){
@@ -1026,6 +1184,8 @@ class World {
     this.cam.position.copy(quad.pos); this.cam.quaternion.copy(quad.quat).multiply(this._up);
     this.sun.position.set(quad.pos.x+140,quad.pos.y+210,quad.pos.z+90); this.sun.target.position.copy(quad.pos); this.sun.target.updateMatrixWorld();
     for(let i=0;i<this.spinners.length;i++) this.spinners[i].rotation.z+=0.012;
+    if(this.portalFx){ const tt=performance.now()*0.004;
+      for(let i=0;i<this.portalFx.length;i++){ const f=this.portalFx[i], k=1+0.08*Math.sin(tt+f.ph); f.m.scale.set(k,k,1); } }
     this.r.render(this.sc,this.cam);
   }
 }
@@ -1074,13 +1234,14 @@ class Audio {
 }
 class Sim {
   constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this.world=new World(); this.hud=new HUD(); this.audio=new Audio();
-    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; $('hDrone').textContent=QUADS['thezone'].name;
-    this._tune(); this._setup(); requestAnimationFrame(t=>this._loop(t)); }
+    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; $('hDrone').textContent=QUADS['thezone'].name;
+    this._tune(); this._setup(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
   _tune(){
     const bind=(id,vid,fmt,fn)=>{ const s=$(id),v=$(vid); s.oninput=()=>{ fn(+s.value); v.textContent=fmt(+s.value); }; };
     this._refreshTune=()=>{ const D=this.quad.D;
       $('tRate').value=D.useActual?D.maxRate:D.rate; $('vRate').textContent=Math.round(D.useActual?D.maxRate:D.rate);
       $('tSnap').value=D.maxAlpha; $('vSnap').textContent=Math.round(D.maxAlpha/1000)+'k';
+      const prr=Math.round(D.pitchRate||(D.useActual?D.maxRate:D.rate)); $('tPitch').value=prr; $('vPitch').textContent=prr;
       $('tP').value=D.Kr; $('vP').textContent=D.Kr;
       $('tI').value=D.pidI||0; $('vI').textContent=D.pidI||0;
       $('tD').value=D.pidD||0; $('vD').textContent=D.pidD||0;
@@ -1094,6 +1255,7 @@ class Sim {
       const fb=this.world._floor==null?100:this.world._floor; $('tFloor').value=fb; $('vFloor').textContent=fb+'%'; };
     bind('tRate','vRate',v=>Math.round(v),v=>{const D=this.quad.D; if(D.useActual)D.maxRate=v; D.rate=v;});
     bind('tSnap','vSnap',v=>Math.round(v/1000)+'k',v=>{this.quad.D.maxAlpha=v; this.quad.D.maxAlphaY=Math.round(v*0.4);});
+    bind('tPitch','vPitch',v=>Math.round(v),v=>this.quad.D.pitchRate=v);
     bind('tP','vP',v=>v,v=>this.quad.D.Kr=v);
     bind('tI','vI',v=>v,v=>this.quad.D.pidI=v);
     bind('tD','vD',v=>v,v=>this.quad.D.pidD=v);
@@ -1105,6 +1267,20 @@ class Sim {
     bind('tCam','vCam',v=>v+'°',v=>{ this.quad.D.camAngle=v; });
     bind('tVol','vVol',v=>v+'%',v=>{ this.audio.setVol(v/100); });
     bind('tFloor','vFloor',v=>v+'%',v=>{ this.world._floor=v; if(this.world.groundMat) this.world.groundMat.color.setScalar(v/100); });
+  }
+  _craftIcons(){
+    const QS='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="3.2" cy="3.2" r="2.1"/><circle cx="12.8" cy="3.2" r="2.1"/><circle cx="3.2" cy="12.8" r="2.1"/><circle cx="12.8" cy="12.8" r="2.1"/><path d="M4.7 4.7 11.3 11.3M11.3 4.7 4.7 11.3"/></svg>';
+    const HS='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 2.5h13M8 2.5v3"/><ellipse cx="7" cy="9.5" rx="4.2" ry="2.7"/><path d="M11 9.5h3.5V7.5"/></svg>';
+    const order=['mario5','thezone','bee35','racex','wasp','lr7','heli','m3x'];
+    $('craftIcons').innerHTML=order.map((id,i)=>{ const D=QUADS[id];
+      return '<span title="'+D.name+' — '+D.tag+'" style="display:inline-flex;align-items:center;gap:2px;color:'+(this.quad.id===id?'#3fe08a':'#56705f')+'">'+(i+1)+(D.heli?HS:QS)+'</span>'; }).join('');
+  }
+  _toMenu(){
+    this.flying=false; this.quad.armed=false; this.inp.kt=0;
+    this.setOpen=false; $('set').classList.remove('on'); $('legend').style.display='block';
+    $('hud').classList.remove('on'); $('setup').classList.remove('hide');
+    document.body.style.cursor='default';
+    if(this._scanFn){ clearInterval(this._si); this._si=setInterval(this._scanFn,300); this._scanFn(); }
   }
   _goPortal(p){ const from=this.world.mapId;
     this.world.loadMap(p.to);
@@ -1128,7 +1304,7 @@ class Sim {
       if(!on){ $('gpStatus').innerHTML='Keyboard ready — move a stick to use a controller.'; }
       else if(this._hasCal()){ $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#3fe08a">Calibration remembered — just hit FLY (or re-calibrate).</span>'; $('btnCal').textContent='RE-CALIBRATE'; }
       else { $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#ffb04a">Not calibrated yet — calibrate sticks (recommended).</span>'; $('btnCal').textContent='CALIBRATE STICKS'; } };
-    this._si=setInterval(scan,300); scan();
+    this._si=setInterval(scan,300); scan(); this._scanFn=scan;
     $('flyKb').onclick=()=>this._go(false); $('flyGp').onclick=()=>this._go(true);
     $('btnCal').onclick=()=>{ this.inp.gpi=this._gpi; this._calibrate(()=>scan()); };
     $('tCal').onclick=()=>{ this._calibrate(()=>{ if(this.setOpen)this._refreshTune(); }); };
@@ -1235,7 +1411,10 @@ class Sim {
     if(gp){ this.inp.gp=true; this.inp.gpi=this._gpi;
       try{ const s=localStorage.getItem('fpvcal'); if(s){ const o=JSON.parse(s); if(o.map)this.inp.map=o.map; if(o.inv)this.inp.inv=o.inv; if(o.btn)this.inp.btn=o.btn; } }catch(e){}
     } else this.inp.gp=false;
-    $('setup').classList.add('hide'); $('hud').classList.add('on'); document.body.style.cursor='none'; this.flying=true;
+    $('setup').classList.add('hide'); $('hud').classList.add('on'); this.flying=true;
+    // TAB panel starts open — press TAB to hide, TAB again to bring it back
+    this.setOpen=true; $('set').classList.add('on'); $('legend').style.display='none';
+    document.body.style.cursor='default'; this._refreshTune();
     this.audio.start();   // resume AudioContext on this user gesture
     flash('▶ '+this.quad.D.name,'#3fe08a'); }
   _loop(ts){ requestAnimationFrame(t=>this._loop(t)); const dt=this.lt?Math.min((ts-this.lt)/1000,0.05):0.016; this.lt=ts; wind.upd(dt);
@@ -1250,7 +1429,11 @@ class Sim {
     if(this.inp.levelNow){ this.quad.levelOut(); flash('⊕ LEVEL','#7fd0ff'); }
     if(this.inp.toggleMode){ const m=this.quad.cycleMode(); flash(m==='ANGLE'?'⊕ ANGLE':'⟲ ACRO', m==='ANGLE'?'#ffd84a':'#3fe08a'); }
     if(this.inp.nextMap){ const o=['plains','zone','factory']; this._setMap(o[(o.indexOf(this.world.mapId)+1)%3]); }
-    if(this.inp.swap && QUADS[this.inp.swap]){ this.quad.setProfile(this.inp.swap); this.quad.reset(); this.inp.kt=0; $('hDrone').textContent=QUADS[this.inp.swap].name; if(this.setOpen)this._refreshTune(); flash('⟳ '+QUADS[this.inp.swap].name,'#7fd0ff'); }
+    if(this.inp.toggleQuality){ const w=this.world; w.lowQ=!w.lowQ;
+      w.r.setPixelRatio(w.lowQ?1:Math.min(devicePixelRatio,1.75)); w.sun.castShadow=!w.lowQ;
+      flash(w.lowQ?'▸ FAST RENDER':'◆ FULL QUALITY','#7fd0ff'); }
+    if(this.inp.esc){ this._toMenu(); return; }
+    if(this.inp.swap && QUADS[this.inp.swap]){ this.quad.setProfile(this.inp.swap); this.quad.reset(); this.inp.kt=0; $('hDrone').textContent=QUADS[this.inp.swap].name; if(this.setOpen)this._refreshTune(); flash('⟳ '+QUADS[this.inp.swap].name,'#7fd0ff'); this._craftIcons(); }
     this.quad.upd(dt,this.inp);
     if(this.quad.crashed&&!this._wasCrashed) flash('✸ CRASH — X to level','#ff6048');
     this._wasCrashed=this.quad.crashed;
@@ -1258,6 +1441,10 @@ class Sim {
     else for(let i=0;i<PORTALS.length;i++){ const p=PORTALS[i], qp=this.quad.pos;
       const dx=qp.x-p.x, dy=qp.y-p.y, dz=qp.z-p.z;
       if(Math.abs(dz)<2.5 && dx*dx+dy*dy<(p.r-1)*(p.r-1)){ this._goPortal(p); break; } }
+    if(this._eggCool>0) this._eggCool-=dt;
+    else if(this.world.mapId==='factory'&&this.world.egg){ const e=this.world.egg, qp=this.quad.pos;
+      const ex=qp.x-e.x, ey=qp.y-e.y, ez=qp.z-e.z;
+      if(ex*ex+ey*ey+ez*ez<81){ this._eggCool=4; this.quad.vel.y+=10; flash('🦆 QUACK! DUCK BOOST','#ffd84a'); } }
     this.world.render(this.quad); this.hud.upd(this.quad,this.inp);
     this.audio.upd(this.quad.motor, this.quad.armed);
   }
