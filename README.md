@@ -2,18 +2,20 @@
 
 A standalone, single-file FPV drone freestyle sim. Three linked worlds, ten craft (including a collective-pitch helicopter), real-physics flight model, and full DJI/gamepad support. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN), so it runs straight from disk or GitHub Pages.
 
-> **Latest:** `trippy-plains-v23.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
+> **Latest:** `trippy-plains-v24.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
 
 ---
 
 ## 🚀 Quick start
 
-1. Double-click `trippy-plains-v23.html` (or serve it from any static host).
+1. Double-click `trippy-plains-v24.html` (or serve it from any static host).
 2. On the setup screen choose **Keyboard**, **Controller** (power it on first — move a stick to wake it) or **Touch** on phones/tablets.
 3. With a controller, run **CALIBRATE STICKS** the first time (see below). It's remembered afterwards.
 4. Hit FLY. The TAB tuning panel opens automatically — press **TAB** to hide it.
 
 > ⚠️ Open the file directly — don't run it inside an embedded preview/iframe, or the browser blocks the Gamepad API.
+>
+> 🍏 **Safari:** Safari only exposes a controller after a **button press** on it — moving the sticks alone won't wake it. Press any button (C1/C2/record on a DJI RC), serve the page over **https** (GitHub Pages is fine), and keep the tab focused. If the controller exposes no buttons at all, Safari never shows it — use Chrome on that machine.
 
 ---
 
@@ -95,7 +97,7 @@ Everything (axes, inversions, button bindings) is saved to the browser and reloa
 
 Open by default in flight; TAB toggles it. Live tuning synced to the active craft:
 
-**Craft** — clickable picker for all ten machines. **Snappiness** — Rate (up to 2000 °/s), Snap (up to 320k), **Pitch rate** and **Yaw rate** per-axis overrides. **Flight · Physics** — Power (TWR), mass/inertia, throttle response, gravity, expo, **drag %, propwash %, angle-mode lean**. **Rate PID** — P, I, D. **Camera** — angle + FoV. **Feel · Wind** — cam-shake amount (0 = off) and wind speed (0 = off), both remembered. **Sound** — motor volume. **Scene** — floor/background brightness, contrast and colour saturation, **time of day (DAWN / NOON / DUSK — remembered)**. **Build** — sandbox object palette (drag-drop or click-place, right-click remove, CLEAR). **Map** — Plains / Zone Field / Factory / Sandbox buttons. **Controller** — stick deadzone (remembered) + calibrate sticks.
+**Craft** — clickable picker for all ten machines. **Snappiness** — Rate (up to 2000 °/s), Snap (up to 320k), **Pitch rate** and **Yaw rate** per-axis overrides. **Flight · Physics** — Power (TWR), mass/inertia, throttle response, gravity, expo, **drag %, propwash %, angle-mode lean**. **Rate PID** — P, I, D. **Camera** — angle + FoV. **Feel · Wind** — cam-shake amount (0 = off), wind speed (0 = off), props-in-view and **haptics** toggles, all remembered. **Sound** — motor volume. **Scene** — floor/background brightness, contrast and colour saturation, **time of day (DAWN / NOON / DUSK — remembered)**. **Build** — sandbox object palette (drag-drop or click-place, right-click remove, CLEAR). **Map** — Plains / Zone Field / Factory / Sandbox buttons. **Controller** — stick deadzone (remembered) + calibrate sticks.
 
 ---
 
@@ -138,6 +140,7 @@ Single file + one CDN fetch. On every map load all static opaque meshes are **ba
 | `trippy-plains-v21.html` | **World & atmosphere — distant horizon scenery on every map (fog-softened hill rings on Plains/Zone, an industrial skyline of silhouette blocks and far chimneys around the Ruhrwerk), screen-space sun lens flare that blooms when you look into the sun, wind-driven fluttering flags and pennants, a drifting smoke plume off the tallest factory stack, lazy bird flocks circling the open maps, and a 900-star night sky with a moon over the Sandbox.** |
 | `trippy-plains-v22.html` | **Baked & fast — per-material static-geometry baking on map load (draw calls collapse from ~1500+ to a few dozen in the Ruhrwerk; animated pieces excluded automatically), auto fast-render fallback below 45 fps, per-map hemisphere bounce light (green off grass, tan off dirt, grey off concrete), denser low-sun fog at dawn/dusk for deeper atmospheric layering.** |
 | `trippy-plains-v23.html` | **Mobile & touch — FLY · TOUCH mode with dual thumb-sticks at the bottom of the screen (multi-touch, radius-clamped, sticky throttle, spring-centred right stick), touch button column (ARM/RST/LVL/MAP/TAB/ESC), pinch-zoom/scroll locked, compact HUD layout under 760 px, TAB panel touch-scrollable. Follow-up fixes: pinned ✕ close button in the panel, touch buttons layered above the panel, tap-to-place/erase sandbox building with a 🧹 erase chip.** |
+| `trippy-plains-v24.html` | **Haptics — vibration on crashes, arm/disarm, gates, portals, build taps, touch buttons and the duck (Vibration API on Android/Chrome; gamepad dual-rumble bonus where supported; iOS Safari has no vibration API). Toggle in FEEL, remembered. Graphics: the quad now casts a soft contact-shadow blob that grows/fades with altitude and slides away from the sun (the landing depth cue), a cool rim/backlight opposite the sun (time-of-day matched) so silhouettes separate from the background, and per-instance hue/lightness variation across all vegetation.** |
 
 ---
 
