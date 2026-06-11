@@ -2,14 +2,14 @@
 
 A standalone, single-file FPV drone freestyle sim. Three linked worlds, ten craft (including a collective-pitch helicopter), real-physics flight model, and full DJI/gamepad support. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN), so it runs straight from disk or GitHub Pages.
 
-> **Latest:** `trippy-plains-v20.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
+> **Latest:** `trippy-plains-v23.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
 
 ---
 
 ## 🚀 Quick start
 
-1. Double-click `trippy-plains-v20.html` (or serve it from any static host).
-2. On the setup screen choose **Keyboard** or **Controller** (power on your gamepad first — move a stick to wake it).
+1. Double-click `trippy-plains-v23.html` (or serve it from any static host).
+2. On the setup screen choose **Keyboard**, **Controller** (power it on first — move a stick to wake it) or **Touch** on phones/tablets.
 3. With a controller, run **CALIBRATE STICKS** the first time (see below). It's remembered afterwards.
 4. Hit FLY. The TAB tuning panel opens automatically — press **TAB** to hide it.
 
@@ -39,6 +39,8 @@ A standalone, single-file FPV drone freestyle sim. Three linked worlds, ten craf
 | `ESC` | Back to the start screen |
 
 The bottom-right legend shows numbered mini-icons for all ten craft — the active one is lit green. The same row appears in TAB as clickable buttons.
+
+**📱 Mobile / touch:** on a touch device the setup screen offers **FLY · TOUCH** — two thumb-stick zones appear at the bottom corners (Mode 2: left = throttle/yaw with sticky throttle that holds where you leave it, right = pitch/roll, spring-centred). A button column on the right edge gives ARM / RST / LVL / MAP / TAB / ESC. Landscape recommended; the HUD compacts and the tile row lifts above your thumbs.
 
 **Input is self-healing:** in keyboard mode the controller takes over the moment you move a stick (🎮 flash + HUD icon); if the pad naps or its index drifts mid-flight, it re-acquires automatically or falls back to keyboard.
 
@@ -105,7 +107,7 @@ Open by default in flight; TAB toggles it. Live tuning synced to the active craf
 
 ## ⚡ Performance
 
-Single file + one CDN fetch. Repeated towers share cached geometries; switching maps disposes the old map's GPU buffers; `Q` toggles a fast-render mode (lower pixel ratio, shadows off) if the dense factory dips your frame rate.
+Single file + one CDN fetch. On every map load all static opaque meshes are **baked into one merged mesh per material**, collapsing thousands of draw calls to a few dozen; vegetation is instanced (one call per map); towers share cached geometries; switching maps disposes the old map's GPU buffers. If FPS sits under 45 for 3 s the sim auto-drops to fast render (flash + `Q` restores), and `Q` toggles it manually any time.
 
 ---
 
@@ -133,6 +135,9 @@ Single file + one CDN fetch. Repeated towers share cached geometries; switching 
 | `trippy-plains-v18.html` | **Realism graphics pass — bump-mapped grounds with max-anisotropy filtering (sharp at FPV grazing angles), richer procedural surfaces (tire tracks & scuffs on the plains, mow stripes & dirt patches on the zone grass, oil stains & faded lane lines on the factory concrete), painted-sun sky domes with horizon haze and high streak clouds, soft billboard clouds replacing the old blobs, ~11k instanced grass/scrub/weed tufts per map (one draw call), per-tree foliage colour variation, tighter shadow frustum + normal-bias for crisper contact shadows.** |
 | `trippy-plains-v19.html` | **Light & surface pass — time-of-day system (DAWN / NOON / DUSK buttons: low warm sun with long shadows, repainted sky, matched fog & hemisphere light, persisted). Procedural wall materials: brick with soot streaks on chimneys & coke ovens, corrugated cladding with rust runs & bolt rows on warehouses, panel-lined stained concrete on towers, neutral grime maps tinting containers/gates/cranes. Prop dust kicks up when hovering low at throttle.** |
 | `trippy-plains-v20.html` | **Pilot pack — props-in-view overlay (subtle spinning blur discs at top of frame, throttle/tilt-driven, toggleable & remembered), crash video glitch (frame jitter + scanline static + colour washout for half a second), live rates-curve graph in TAB (roll/pitch/yaw, Betaflight-configurator style, redraws with every slider), compass heading + degrees in the HUD, amps-draw OSD tile, FPS counter.** |
+| `trippy-plains-v21.html` | **World & atmosphere — distant horizon scenery on every map (fog-softened hill rings on Plains/Zone, an industrial skyline of silhouette blocks and far chimneys around the Ruhrwerk), screen-space sun lens flare that blooms when you look into the sun, wind-driven fluttering flags and pennants, a drifting smoke plume off the tallest factory stack, lazy bird flocks circling the open maps, and a 900-star night sky with a moon over the Sandbox.** |
+| `trippy-plains-v22.html` | **Baked & fast — per-material static-geometry baking on map load (draw calls collapse from ~1500+ to a few dozen in the Ruhrwerk; animated pieces excluded automatically), auto fast-render fallback below 45 fps, per-map hemisphere bounce light (green off grass, tan off dirt, grey off concrete), denser low-sun fog at dawn/dusk for deeper atmospheric layering.** |
+| `trippy-plains-v23.html` | **Mobile & touch — FLY · TOUCH mode with dual thumb-sticks at the bottom of the screen (multi-touch, radius-clamped, sticky throttle, spring-centred right stick), touch button column (ARM/RST/LVL/MAP/TAB/ESC), pinch-zoom/scroll locked, compact HUD layout under 760 px, TAB panel touch-scrollable.** |
 
 ---
 
