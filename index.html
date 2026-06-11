@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Trippy Plains v23 — FPV Freestyle</title>
+<title>Trippy Plains v24 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}
@@ -164,6 +164,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div class="sr"><span>Cam shake %</span><input type="range" id="tShake" min="0" max="200" step="5"><span class="sv" id="vShake"></span></div>
   <div class="sr"><span>Wind m/s</span><input type="range" id="tWind" min="0" max="12" step="0.5"><span class="sv" id="vWind"></span></div>
   <div class="sr"><span>Props in view</span><button class="btn sec" id="tProps">ON</button></div>
+  <div class="sr"><span>Haptics (mobile/pad)</span><button class="btn sec" id="tHap">ON</button></div>
   <div class="st">SOUND</div>
   <div class="sr"><span>Motor volume</span><input type="range" id="tVol" min="0" max="100" step="5"><span class="sv" id="vVol"></span></div>
   <div class="st">SCENE</div>
@@ -218,7 +219,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v23 · TOUCH STICKS · MOBILE</div>
+  <div class="sub">FPV FREESTYLE · v24 · HAPTICS · LIGHT POLISH</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyTouch" style="display:none;">FLY &middot; TOUCH</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-0 drone &middot; M acro/angle &middot; ESC menu<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
@@ -369,6 +370,10 @@ const QUADS = {
 /* ═══════════════ BATTERY — 6S sag model (punch fades under load) ═══════════════ */
 
 const $=id=>document.getElementById(id);
+const getPads=()=>{ try{
+  const g=navigator.getGamepads?navigator.getGamepads():(navigator.webkitGetGamepads?navigator.webkitGetGamepads():[]);
+  return g||[]; }catch(e){ return []; } };
+const IS_SAFARI=/apple/i.test(navigator.vendor||'')&&!/crios|chrome|chromium|edg/i.test(navigator.userAgent||'');
 
 // state.js — mutable shared state (held in objects so it can be changed across modules)
 const Env = { GRAV: 9.81 };          // adjustable gravity
@@ -731,7 +736,7 @@ class Input {
       if(e.code==='KeyQ') this._q.toggleQuality=true; });
     addEventListener('gamepadconnected',()=>{});
   }
-  pads(){ try{ return navigator.getGamepads()||[]; }catch(e){ return []; } }
+  pads(){ return getPads(); }
   expo(v,e){ const a=Math.abs(v); return (v<0?-1:1)*((1-e)*a + e*a*a*a); }
   dead(v){ const a=Math.abs(v); return a<this.dz?0 : (v<0?-1:1)*(a-this.dz)/(1-this.dz); }
   upd(dt, expoAmt){
@@ -812,6 +817,14 @@ class World {
     this.sc.add(sun); this.sc.add(sun.target); this.sun=sun;
     // cool fill from below to light the mirrored "Inception" underground level
     const under=new THREE.DirectionalLight(0x7fa8d8, 0.6); under.position.set(-120,-260,-80); this.sc.add(under); this.sc.add(under.target);
+    this.fill=new THREE.DirectionalLight(0xa8c4e0,0.22); this.sc.add(this.fill); this.sc.add(this.fill.target);   // cool rim/backlight
+    { const cv=document.createElement('canvas'); cv.width=cv.height=128; const x=cv.getContext('2d');
+      const g=x.createRadialGradient(64,64,4,64,64,62);
+      g.addColorStop(0,'rgba(0,0,0,0.55)'); g.addColorStop(0.7,'rgba(0,0,0,0.25)'); g.addColorStop(1,'rgba(0,0,0,0)');
+      x.fillStyle=g; x.fillRect(0,0,128,128);
+      this.blob=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6),
+        new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false,opacity:0}));
+      this.blob.rotation.x=-Math.PI/2; this.blob.renderOrder=1; this.sc.add(this.blob); }
     this.spinners=[]; this.mapId=null;
     this.loadMap('plains');   // default map — Trippy Plains
     addEventListener('resize',()=>{this.cam.aspect=innerWidth/innerHeight;this.cam.updateProjectionMatrix();this.r.setSize(innerWidth,innerHeight);});
@@ -918,11 +931,12 @@ class World {
   setTod(t){ this.tod=t||'noon'; this._applyTod(); }
   _applyTod(){
     if(!this._noon||this.mapId==='build') return;       // the sandbox keeps its night-grid look
-    const t=this.tod||'noon'; let sun,inten,off,sky,fog,bg,hemi;
-    if(t==='dawn'){ sun=0xffc080; inten=1.3; off=[230,70,60]; sky=['#6f86b8','#f0c8a0','#ffd8a8']; fog=0xe0c4a4; bg=0xe0c4a4; hemi=0.55; }
-    else if(t==='dusk'){ sun=0xff9a55; inten=1.2; off=[-210,55,130]; sky=['#5a5f8f','#e8a878','#ffb890']; fog=0xd0a890; bg=0xd0a890; hemi=0.5; }
-    else { sun=this._noon.sun; inten=1.5; off=[140,210,90]; sky=this._noon.sky; fog=this._noon.fog; bg=this._noon.bg; hemi=0.70; }
+    const t=this.tod||'noon'; let sun,inten,off,sky,fog,bg,hemi,fc,fi;
+    if(t==='dawn'){ sun=0xffc080; inten=1.3; off=[230,70,60]; sky=['#6f86b8','#f0c8a0','#ffd8a8']; fog=0xe0c4a4; bg=0xe0c4a4; hemi=0.55; fc=0xd8b8a0; fi=0.18; }
+    else if(t==='dusk'){ sun=0xff9a55; inten=1.2; off=[-210,55,130]; sky=['#5a5f8f','#e8a878','#ffb890']; fog=0xd0a890; bg=0xd0a890; hemi=0.5; fc=0xc0a8c8; fi=0.18; }
+    else { sun=this._noon.sun; inten=1.5; off=[140,210,90]; sky=this._noon.sky; fog=this._noon.fog; bg=this._noon.bg; hemi=0.70; fc=0xa8c4e0; fi=0.22; }
     this.sun.color.set(sun); this.sun.intensity=inten; this.sunOff.set(off[0],off[1],off[2]);
+    if(this.fill){ this.fill.color.set(fc); this.fill.intensity=fi; }
     this.sc.fog.color.set(fog); this.sc.background.set(bg); this.hemi.intensity=hemi;
     if(t==='noon'){ this.sc.fog.near=this._noon.fogN||450; this.sc.fog.far=this._noon.fogF||2500; }
     else { this.sc.fog.near=300; this.sc.fog.far=1900; }              // low sun → denser air, deeper layers
@@ -1496,7 +1510,11 @@ class World {
       Q.setFromAxisAngle(up,rnd()*Math.PI);
       M4.compose(V.set(px,0,pz),Q,S.set(sc,sc*(0.7+rnd()*0.6),sc));
       im.setMatrixAt(placed++,M4); }
-    im.count=placed; im.instanceMatrix.needsUpdate=true; this._root.add(im); }
+    im.count=placed; im.instanceMatrix.needsUpdate=true;
+    if(im.setColorAt){ const cc=new THREE.Color(), base=new THREE.Color(c1);
+      for(let i=0;i<placed;i++){ cc.copy(base).offsetHSL((rnd()-0.5)*0.03,(rnd()-0.5)*0.15,(rnd()-0.5)*0.10); im.setColorAt(i,cc); }
+      if(im.instanceColor) im.instanceColor.needsUpdate=true; }
+    this._root.add(im); }
   _bakeStatic(){               // merge all static opaque meshes per material — massive draw-call win
     if(this.mapId==='build') return;
     this._root.updateMatrixWorld(true);
@@ -1589,6 +1607,15 @@ class World {
       this._she.set((Math.random()-.5)*sh,(Math.random()-.5)*sh,(Math.random()-.5)*sh*1.5);
       this.cam.quaternion.multiply(this._shq.setFromEuler(this._she)); }
     this.sun.position.set(quad.pos.x+this.sunOff.x,quad.pos.y+this.sunOff.y,quad.pos.z+this.sunOff.z); this.sun.target.position.copy(quad.pos); this.sun.target.updateMatrixWorld();
+    this.fill.position.set(quad.pos.x-this.sunOff.x,quad.pos.y+140,quad.pos.z-this.sunOff.z);
+    this.fill.target.position.copy(quad.pos); this.fill.target.updateMatrixWorld();
+    const agl2=quad.below?-1:quad.pos.y;                       // the quad's own soft shadow — key landing depth cue
+    if(agl2>=0&&agl2<7){ const kk=1-agl2/7;
+      this.blob.material.opacity=0.5*kk*kk;
+      const bs=1+agl2*0.5; this.blob.scale.set(bs,bs,1);
+      const rx=Math.max(-1.2,Math.min(1.2,this.sunOff.x/this.sunOff.y)), rz=Math.max(-1.2,Math.min(1.2,this.sunOff.z/this.sunOff.y));
+      this.blob.position.set(quad.pos.x-rx*agl2,0.06,quad.pos.z-rz*agl2); }
+    else this.blob.material.opacity=0;
     for(let i=0;i<this.spinners.length;i++) this.spinners[i].rotation.z+=0.012;
     const tnow=performance.now();
     if(this._flutter&&this._flutter.length){ const ftt=tnow*0.004, wA=0.6+(wind.on?wind.spd*0.08:0);
@@ -1708,16 +1735,18 @@ class Audio {
 class Sim {
   constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this._loadTune(); this.world=new World(); this.hud=new HUD(); this.audio=new Audio();
     this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; this.race={on:false,i:0,t0:0}; this._glitch=0;
-    this.view={shake:1,con:100,sat:100,dz:6,props:1};
+    this.view={shake:1,con:100,sat:100,dz:6,props:1,hap:1};
     try{ const vv=JSON.parse(localStorage.getItem('fpvview')||'{}');
       if(vv.shake!=null) this.view.shake=vv.shake; if(vv.con) this.view.con=vv.con; if(vv.sat) this.view.sat=vv.sat;
       if(vv.dz!=null){ this.view.dz=vv.dz; this.inp.dz=vv.dz/100; }
       if(vv.tod) this.view.tod=vv.tod;
       if(vv.props!=null) this.view.props=vv.props;
+      if(vv.hap!=null) this.view.hap=vv.hap;
       if(vv.wind>0){ wind.base=vv.wind; wind.on=true; } }catch(e){}
     this.world.shakeAmt=this.view.shake; this._applyView();
     if(this.view.tod&&this.view.tod!=='noon') this.world.setTod(this.view.tod);
-    $('tProps').textContent=(this.view.props===0)?'OFF':'ON'; $('hDrone').textContent=QUADS['thezone'].name;
+    $('tProps').textContent=(this.view.props===0)?'OFF':'ON';
+    $('tHap').textContent=(this.view.hap===0)?'OFF':'ON'; $('hDrone').textContent=QUADS['thezone'].name;
     this._tune(); this._setup(); this._buildUI(); this._touchInit(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
   _tune(){
     this._drawRates=()=>{ const cv=$('rateCv'); if(!cv) return;
@@ -1795,10 +1824,14 @@ class Sim {
     const cap=('ontouchstart' in window)||((navigator.maxTouchPoints||0)>0);
     if(!cap) return;
     $('flyTouch').style.display='inline-block';
+    if(!navigator.vibrate){ try{ const sw=document.createElement('input');
+      sw.type='checkbox'; sw.setAttribute('switch','');
+      sw.style.cssText='position:fixed;left:-100px;top:-100px;width:1px;height:1px;opacity:0.01;pointer-events:none;';
+      document.body.appendChild(sw); this._iosSw=sw; }catch(e){} }
     $('flyTouch').onclick=()=>{ this.inp.touchOn=true; document.body.classList.add('touchui');
       this._tsSetup(); this._go(false);
       if(innerHeight>innerWidth) flash('↺ landscape recommended','#ffb04a'); };
-    const q=n=>{ this.inp._q[n]=true; };
+    const q=n=>{ this.inp._q[n]=true; this._buzz(8); };
     $('tbArm').onclick=()=>q('arm'); $('tbRst').onclick=()=>q('reset'); $('tbLvl').onclick=()=>q('levelNow');
     $('tbMap').onclick=()=>q('nextMap'); $('tbTab').onclick=()=>q('toggleSet'); $('tbEsc').onclick=()=>q('esc');
   }
@@ -1845,7 +1878,7 @@ class Sim {
     $('c').addEventListener('click',e=>{ if(this.selChip&&this.setOpen&&this.flying) this._place(this.selChip,e.clientX,e.clientY); });
     $('c').addEventListener('contextmenu',e=>{ if(this.world.mapId!=='build'||!this.setOpen) return;
       e.preventDefault(); const i=this._itemAt(e.clientX,e.clientY);
-      if(i>=0){ this.world.removeBuildAt(i); this.audio.tone(330,0.08); flash('✕ REMOVED','#ff6048'); } });
+      if(i>=0){ this.world.removeBuildAt(i); this.audio.tone(330,0.08); this._buzz(12); flash('✕ REMOVED','#ff6048'); } });
     $('bClear').onclick=()=>{ if(this.world.mapId!=='build'){ flash('SANDBOX only — N to switch','#ffb04a'); return; }
       this.world.clearBuild(); flash('▦ SANDBOX CLEARED','#ff6048'); };
   }
@@ -1862,14 +1895,21 @@ class Sim {
   _place(t,cx,cy){
     if(this.world.mapId!=='build'){ flash('BUILDER lives in the SANDBOX — N to switch','#ffb04a'); return; }
     if(t==='erase'){ const i=this._itemAt(cx,cy);
-      if(i>=0){ this.world.removeBuildAt(i); this.audio.tone(330,0.08); flash('✕ REMOVED','#ff6048'); }
+      if(i>=0){ this.world.removeBuildAt(i); this.audio.tone(330,0.08); this._buzz(12); flash('✕ REMOVED','#ff6048'); }
       else flash('tap an object to erase','#ffb04a');
       return; }
     const pt=this._groundPoint(cx,cy); if(!pt){ flash('aim at the floor','#ffb04a'); return; }
     const fv=this._fwd=this._fwd||new THREE.Vector3();
     fv.set(0,0,-1).applyQuaternion(this.quad.quat);
     const ry=Math.round(Math.atan2(fv.x,-fv.z)/(Math.PI/2))*(Math.PI/2);   // face the pilot, axis-aligned
-    if(this.world.addBuildItem(t,pt.x,pt.z,ry)){ this.audio.tone(990,0.06); flash('+ '+t.toUpperCase(),'#3fe08a'); } }
+    if(this.world.addBuildItem(t,pt.x,pt.z,ry)){ this.audio.tone(990,0.06); this._buzz(10); flash('+ '+t.toUpperCase(),'#3fe08a'); } }
+  _buzz(pat){ if(this.view&&this.view.hap===0) return;
+    try{ if(navigator.vibrate) navigator.vibrate(pat); }catch(e){}
+    if(!navigator.vibrate&&this._iosSw){ try{ this._iosSw.click();           // iOS 17.4+ switch-control tick
+      if(Array.isArray(pat)&&pat.length>2) setTimeout(()=>this._iosSw.click(),130); }catch(e){} }
+    try{ const g=getPads()[this.inp.gpi], a=g&&g.vibrationActuator;
+      if(a&&a.playEffect){ const d=Array.isArray(pat)?pat.reduce((x,y)=>x+y,0):pat;
+        a.playEffect('dual-rumble',{duration:Math.min(220,d),strongMagnitude:0.8,weakMagnitude:0.4}); } }catch(e){} }
   _propsFx(q){ const L=$('propL'), Rp=$('propR');
     if(this.view.props===0){ L.style.opacity=0; Rp.style.opacity=0; return; }
     this._pr=(this._pr||0)+(q.armed?(8+q.motor*70):0);
@@ -1880,7 +1920,7 @@ class Sim {
   _setTod(t){ this.world.setTod(t); this.view.tod=t; this._saveView();
     flash(t==='dawn'?'🌅 DAWN':t==='dusk'?'🌇 DUSK':'☀ NOON','#ffd84a'); }
   _applyView(){ $('c').style.filter='contrast('+this.view.con+'%) saturate('+this.view.sat+'%)'; }
-  _saveView(){ try{ localStorage.setItem('fpvview', JSON.stringify({shake:this.view.shake,con:this.view.con,sat:this.view.sat,dz:this.view.dz,tod:this.view.tod,props:this.view.props,wind:wind.on?wind.base:0})); }catch(e){} }
+  _saveView(){ try{ localStorage.setItem('fpvview', JSON.stringify({shake:this.view.shake,con:this.view.con,sat:this.view.sat,dz:this.view.dz,tod:this.view.tod,props:this.view.props,hap:this.view.hap,wind:wind.on?wind.base:0})); }catch(e){} }
   _loadTune(){ try{ const t=localStorage.getItem('fpvtune_'+this.quad.id); if(t) Object.assign(this.quad.D, JSON.parse(t)); }catch(e){} }
   _gateGlow(i){ const gs=this.world.raceGates; if(!gs) return; gs.forEach((g,j)=>g.mk.material.opacity=(j===i?0.85:0)); }
   _swapCraft(id){ if(!QUADS[id]||this.quad.id===id) return;
@@ -1915,20 +1955,23 @@ class Sim {
     else this.quad.pos.set(0,8,0);
     this.quad.below=false; this._pCool=2;
     if(this.setOpen) this._refreshTune();
-    this.audio.tone(520,0.18,0.1); flash('⊛ '+(p.to==='zone'?'ZONE FIELD':p.to==='factory'?'RUHRWERK':p.to==='build'?'SANDBOX':'TRIPPY PLAINS'),'#cfa0ff'); }
+    this.audio.tone(520,0.18,0.1); this._buzz([15,30,15]); flash('⊛ '+(p.to==='zone'?'ZONE FIELD':p.to==='factory'?'RUHRWERK':p.to==='build'?'SANDBOX':'TRIPPY PLAINS'),'#cfa0ff'); }
   _setMap(id){ if(id===this.world.mapId) return;
     this.world.loadMap(id);
     const a=this.quad.armed; this.quad.reset(); this.quad.armed=a; this.inp.kt=0;
     if(this.setOpen) this._refreshTune();
     flash(id==='zone'?'⛰ ZONE FIELD':id==='factory'?'🏭 RUHRWERK':id==='build'?'▦ SANDBOX':'🌀 TRIPPY PLAINS','#7fd0ff'); }
   _hasCal(){ try{ return !!localStorage.getItem('fpvcal'); }catch(e){ return false; } }
-  _setup(){ const scan=()=>{ const pads=navigator.getGamepads?navigator.getGamepads():[]; let idx=-1; for(let i=0;i<pads.length;i++) if(pads[i]){idx=i;break;}
+  _setup(){ const scan=()=>{ const pads=getPads(); let idx=-1; for(let i=0;i<pads.length;i++) if(pads[i]){idx=i;break;}
       this._gpi=idx; const on=idx>=0;
       $('flyGp').style.display=on?'inline-block':'none'; $('btnCal').style.display=on?'inline-block':'none';
-      if(!on){ $('gpStatus').innerHTML='Keyboard ready — move a stick to use a controller.'; }
+      if(!on){ $('gpStatus').innerHTML='Keyboard ready — move a stick to use a controller.'
+        +(IS_SAFARI?'<br><span style="color:#ffb04a">Safari: press a BUTTON on the controller — stick movement alone won\'t wake it here.<br>Serve over https; if it never shows, Safari isn\'t exposing this controller (Chrome works).</span>':''); }
       else if(this._hasCal()){ $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#3fe08a">Calibration remembered — just hit FLY (or re-calibrate).</span>'; $('btnCal').textContent='RE-CALIBRATE'; }
       else { $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#ffb04a">Not calibrated yet — calibrate sticks (recommended).</span>'; $('btnCal').textContent='CALIBRATE STICKS'; } };
     this._si=setInterval(scan,300); scan(); this._scanFn=scan;
+    addEventListener('gamepadconnected',()=>{ scan(); flash('🎮 CONTROLLER DETECTED','#7fd0ff'); });
+    addEventListener('gamepaddisconnected',()=>scan());
     $('flyKb').onclick=()=>this._go(false); $('flyGp').onclick=()=>this._go(true);
     $('btnCal').onclick=()=>{ this.inp.gpi=this._gpi; this._calibrate(()=>scan()); };
     $('tCal').onclick=()=>{ this._calibrate(()=>{ if(this.setOpen)this._refreshTune(); }); };
@@ -1936,10 +1979,11 @@ class Sim {
     $('setClose').onclick=()=>{ this.inp._q.toggleSet=true; };
     $('mapA').onclick=()=>this._setMap('plains'); $('mapB').onclick=()=>this._setMap('zone'); $('mapC').onclick=()=>this._setMap('factory'); $('mapD').onclick=()=>this._setMap('build');
     $('todA').onclick=()=>this._setTod('dawn'); $('todB').onclick=()=>this._setTod('noon'); $('todC').onclick=()=>this._setTod('dusk');
-    $('tProps').onclick=()=>{ this.view.props=this.view.props?0:1; $('tProps').textContent=this.view.props?'ON':'OFF'; this._saveView(); }; }
+    $('tProps').onclick=()=>{ this.view.props=this.view.props?0:1; $('tProps').textContent=this.view.props?'ON':'OFF'; this._saveView(); };
+    $('tHap').onclick=()=>{ this.view.hap=this.view.hap?0:1; $('tHap').textContent=this.view.hap?'ON':'OFF'; this._saveView(); if(this.view.hap) this._buzz(20); }; }
   _calibrate(done){
     const idx=(this.inp.gpi>=0?this.inp.gpi:this._gpi);
-    const pads=()=>navigator.getGamepads?navigator.getGamepads():[];
+    const pads=()=>getPads();
     if(!pads()[idx]){ flash('No controller detected','#ff6048'); return; }
     this._calDone=done; this.calibrating=true; $('cal').classList.add('on');
     this._restoreCursor=document.body.style.cursor; document.body.style.cursor='default';
@@ -2059,7 +2103,7 @@ class Sim {
     if(this.inp.gpSwitched){ this.inp.gpSwitched=false; flash('🎮 CONTROLLER ACTIVE','#7fd0ff'); }
     if(this.inp.toggleSet){ this.setOpen=!this.setOpen; $('set').classList.toggle('on',this.setOpen); $('legend').style.display=this.setOpen?'none':'block'; document.body.style.cursor=this.setOpen?'default':'none'; if(this.setOpen)this._refreshTune(); }
     if(this.inp.camUp||this.inp.camDn){ const D=this.quad.D; D.camAngle=Math.max(0,Math.min(55,(D.camAngle==null?20:D.camAngle)+(this.inp.camUp?2:-2))); if(this.setOpen)this._refreshTune(); flash('CAM '+Math.round(D.camAngle)+'°','#7fd0ff'); }
-    if(this.inp.arm){ this.quad.arm(true); this.audio.tone(this.quad.armed?880:440,0.1); flash(this.quad.armed?'▶ ARMED':'■ DISARMED', this.quad.armed?'#3fe08a':'#ff6048'); }
+    if(this.inp.arm){ this.quad.arm(true); this.audio.tone(this.quad.armed?880:440,0.1); this._buzz(this.quad.armed?12:25); flash(this.quad.armed?'▶ ARMED':'■ DISARMED', this.quad.armed?'#3fe08a':'#ff6048'); }
     if(this.inp.reset){ const a=this.quad.armed; this.quad.reset(); this.quad.armed=a; this.inp.kt=0; flash('⟲ RESET','#7fd0ff'); }
     if(this.inp.levelNow){ this.quad.levelOut(); flash('⊕ LEVEL','#7fd0ff'); }
     if(this.inp.toggleMode){ const m=this.quad.cycleMode(); flash(m==='ANGLE'?'⊕ ANGLE':'⟲ ACRO', m==='ANGLE'?'#ffd84a':'#3fe08a'); }
@@ -2072,7 +2116,7 @@ class Sim {
     if(this.inp.esc){ this._toMenu(); return; }
     if(this.inp.swap) this._swapCraft(this.inp.swap);
     this.quad.upd(dt,this.inp);
-    if(this.quad.crashed&&!this._wasCrashed){ flash('✸ CRASH — X to level','#ff6048'); this.audio.thud(1); this._glitch=0.45; }
+    if(this.quad.crashed&&!this._wasCrashed){ flash('✸ CRASH — X to level','#ff6048'); this.audio.thud(1); this._glitch=0.45; this._buzz(60); }
     this._wasCrashed=this.quad.crashed;
     if(this._pCool>0) this._pCool-=dt;
     else for(let i=0;i<PORTALS.length;i++){ const p=PORTALS[i], qp=this.quad.pos;
@@ -2081,7 +2125,7 @@ class Sim {
     if(this._eggCool>0) this._eggCool-=dt;
     else if(this.world.mapId==='factory'&&this.world.egg){ const e=this.world.egg, qp=this.quad.pos;
       const ex=qp.x-e.x, ey=qp.y-e.y, ez=qp.z-e.z;
-      if(ex*ex+ey*ey+ez*ez<81){ this._eggCool=4; this.quad.vel.y+=10; flash('🦆 QUACK! DUCK BOOST','#ffd84a'); } }
+      if(ex*ex+ey*ey+ez*ez<81){ this._eggCool=4; this.quad.vel.y+=10; this._buzz([20,30,20,30,60]); flash('🦆 QUACK! DUCK BOOST','#ffd84a'); } }
     if(this.inp.race){
       if(this.world.mapId!=='zone') flash('GATE RUN lives in ZONE FIELD — press N','#ffb04a');
       else if(this.race.on){ this.race.on=false; this._gateGlow(-1); flash('■ RUN CANCELLED','#ff6048'); }
@@ -2094,8 +2138,8 @@ class Sim {
           const tt=(performance.now()-this.race.t0)/1000; this.race.on=false; this._gateGlow(-1);
           let best=0; try{ best=+localStorage.getItem('fpvbest')||0; }catch(e){}
           const nb=!best||tt<best; if(nb) try{ localStorage.setItem('fpvbest',tt); }catch(e){}
-          this.audio.tone(1760,0.16,0.15); flash('🏁 '+tt.toFixed(2)+'s'+(nb?' — NEW BEST!':' · best '+best.toFixed(2)+'s'), nb?'#3fe08a':'#ffe04a'); }
-        else { this._gateGlow(this.race.i); this.audio.tone(1320,0.07); flash('✓ '+this.race.i+' / 5','#ffe04a'); } } }
+          this.audio.tone(1760,0.16,0.15); this._buzz([30,40,60]); flash('🏁 '+tt.toFixed(2)+'s'+(nb?' — NEW BEST!':' · best '+best.toFixed(2)+'s'), nb?'#3fe08a':'#ffe04a'); }
+        else { this._gateGlow(this.race.i); this.audio.tone(1320,0.07); this._buzz(18); flash('✓ '+this.race.i+' / 5','#ffe04a'); } } }
     if(this._glitch>0){ this._glitch-=dt;
       if(this._glitch<=0){ $('c').style.transform=''; $('glitch').style.opacity=0; this._applyView(); }
       else { const j=this._glitch*16;
