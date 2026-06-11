@@ -2,13 +2,13 @@
 
 A standalone, single-file FPV drone freestyle sim. Three linked worlds, ten craft (including a collective-pitch helicopter), real-physics flight model, and full DJI/gamepad support. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN), so it runs straight from disk or GitHub Pages.
 
-> **Latest:** `trippy-plains-v19.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
+> **Latest:** `trippy-plains-v20.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
 
 ---
 
 ## 🚀 Quick start
 
-1. Double-click `trippy-plains-v19.html` (or serve it from any static host).
+1. Double-click `trippy-plains-v20.html` (or serve it from any static host).
 2. On the setup screen choose **Keyboard** or **Controller** (power on your gamepad first — move a stick to wake it).
 3. With a controller, run **CALIBRATE STICKS** the first time (see below). It's remembered afterwards.
 4. Hit FLY. The TAB tuning panel opens automatically — press **TAB** to hide it.
@@ -132,6 +132,7 @@ Single file + one CDN fetch. Repeated towers share cached geometries; switching 
 | `trippy-plains-v17.html` | **Pro tuning: panel widened (no horizontal scroll), clickable CRAFT picker in TAB, new sliders — yaw rate, drag %, propwash %, angle-mode lean, FoV, stick deadzone (persisted) — all covered by tune presets. Two new craft: TINY 65 (1S whoop) and LIFTER X8 (8" cinelifter), drag-validated to real top speeds.** |
 | `trippy-plains-v18.html` | **Realism graphics pass — bump-mapped grounds with max-anisotropy filtering (sharp at FPV grazing angles), richer procedural surfaces (tire tracks & scuffs on the plains, mow stripes & dirt patches on the zone grass, oil stains & faded lane lines on the factory concrete), painted-sun sky domes with horizon haze and high streak clouds, soft billboard clouds replacing the old blobs, ~11k instanced grass/scrub/weed tufts per map (one draw call), per-tree foliage colour variation, tighter shadow frustum + normal-bias for crisper contact shadows.** |
 | `trippy-plains-v19.html` | **Light & surface pass — time-of-day system (DAWN / NOON / DUSK buttons: low warm sun with long shadows, repainted sky, matched fog & hemisphere light, persisted). Procedural wall materials: brick with soot streaks on chimneys & coke ovens, corrugated cladding with rust runs & bolt rows on warehouses, panel-lined stained concrete on towers, neutral grime maps tinting containers/gates/cranes. Prop dust kicks up when hovering low at throttle.** |
+| `trippy-plains-v20.html` | **Pilot pack — props-in-view overlay (subtle spinning blur discs at top of frame, throttle/tilt-driven, toggleable & remembered), crash video glitch (frame jitter + scanline static + colour washout for half a second), live rates-curve graph in TAB (roll/pitch/yaw, Betaflight-configurator style, redraws with every slider), compass heading + degrees in the HUD, amps-draw OSD tile, FPS counter.** |
 
 ---
 

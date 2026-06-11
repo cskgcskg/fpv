@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trippy Plains v19 — FPV Freestyle</title>
+<title>Trippy Plains v20 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;}
 #c{position:fixed;inset:0;width:100vw;height:100vh;display:block;}
+.prop{position:absolute;width:46vmin;height:46vmin;border-radius:50%;pointer-events:none;filter:blur(5px);opacity:0;
+  background:conic-gradient(rgba(12,12,18,.55) 0 13deg, transparent 13deg 120deg, rgba(12,12,18,.55) 120deg 133deg, transparent 133deg 240deg, rgba(12,12,18,.55) 240deg 253deg, transparent 253deg 360deg);}
+#propL{top:-32vmin;left:-14vmin;} #propR{top:-32vmin;right:-14vmin;}
+#glitch{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.10) 0 2px,transparent 2px 5px);mix-blend-mode:overlay;}
 #vig{position:fixed;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse at center,transparent 60%,rgba(2,4,12,.30) 100%);}
 #hud{position:fixed;inset:0;pointer-events:none;display:none;z-index:5;}
 #hud.on{display:block;}
@@ -70,9 +74,11 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 <body>
 <canvas id="c"></canvas>
 <div id="vig"></div>
+<div id="glitch"></div>
 <div id="hud">
   <div class="cross"></div>
-  <div id="top"><span id="hMode" style="color:#bfe9d2;"></span><span class="arm" id="hArm">DISARMED</span><span id="hDrone"></span><span id="hTime" style="color:#9fc4e0;">0:00</span><span id="hGp" style="display:none;">🎮</span></div>
+  <div id="propL" class="prop"></div><div id="propR" class="prop"></div>
+  <div id="top"><span id="hMode" style="color:#bfe9d2;"></span><span class="arm" id="hArm">DISARMED</span><span id="hDrone"></span><span id="hTime" style="color:#9fc4e0;">0:00</span><span id="hGp" style="display:none;">🎮</span><span id="hHdg" style="color:#9fc4e0;"></span><span id="hFps" style="color:#5b8;font-size:11px;"></span></div>
   <div id="thrWrap"><div id="thrFill"></div></div>
   <div id="sticks"><div class="sb"><b></b><i id="stkL"></i></div><div class="sb"><b></b><i id="stkR"></i></div></div>
   <div id="bot">
@@ -81,6 +87,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
     <div class="tile"><div class="l">ALT</div><div class="v" id="hAlt">0.0</div></div>
     <div class="tile"><div class="l">BATT</div><div class="v" id="hVolt">25.2</div></div>
     <div class="tile"><div class="l">MAH</div><div class="v" id="hMah">0</div></div>
+    <div class="tile"><div class="l">AMP</div><div class="v" id="hAmp">0</div></div>
   </div>
 </div>
 <div id="set">
@@ -110,6 +117,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div class="sr"><span>Snap</span><input type="range" id="tSnap" min="20000" max="320000" step="2000"><span class="sv" id="vSnap"></span></div>
   <div class="sr"><span>Pitch rate °/s</span><input type="range" id="tPitch" min="180" max="2000" step="20"><span class="sv" id="vPitch"></span></div>
   <div class="sr"><span>Yaw rate °/s</span><input type="range" id="tYawR" min="120" max="1400" step="10"><span class="sv" id="vYawR"></span></div>
+  <canvas id="rateCv" width="300" height="80" style="width:100%;height:64px;background:rgba(0,0,0,.25);border-radius:4px;margin:4px 0;"></canvas>
   <div class="st">FLIGHT · PHYSICS</div>
   <div class="sr"><span>Power (TWR)</span><input type="range" id="tTwr" min="3" max="14" step="0.5"><span class="sv" id="vTwr"></span></div>
   <div class="sr"><span>Mass / inertia g</span><input type="range" id="tMass" min="200" max="1400" step="10"><span class="sv" id="vMass"></span></div>
@@ -129,6 +137,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
   <div class="st">FEEL · WIND</div>
   <div class="sr"><span>Cam shake %</span><input type="range" id="tShake" min="0" max="200" step="5"><span class="sv" id="vShake"></span></div>
   <div class="sr"><span>Wind m/s</span><input type="range" id="tWind" min="0" max="12" step="0.5"><span class="sv" id="vWind"></span></div>
+  <div class="sr"><span>Props in view</span><button class="btn sec" id="tProps">ON</button></div>
   <div class="st">SOUND</div>
   <div class="sr"><span>Motor volume</span><input type="range" id="tVol" min="0" max="100" step="5"><span class="sv" id="vVol"></span></div>
   <div class="st">SCENE</div>
@@ -182,7 +191,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v19 · LIGHT & SURFACE PASS</div>
+  <div class="sub">FPV FREESTYLE · v20 · PILOT PACK</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-0 drone &middot; M acro/angle &middot; ESC menu<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
@@ -360,7 +369,7 @@ class Battery {
   reset(){ this.vFull=this.cells*4.2; this.vEmpty=this.cells*3.3;
     this.charge=1; this.v=this.vFull; this.vSag=0; this.mah=0; }
   update(dt, spool, maxAmps){
-    const I = Math.pow(spool,2) * maxAmps + 1.5;          // current ∝ thrust demand
+    const I = Math.pow(spool,2) * maxAmps + 1.5; this.I=I; // current ∝ thrust demand
     this.mah += I * dt / 3.6;                             // A·s → mAh
     this.charge = clamp(1 - this.mah/this.cap, 0, 1);
     const vRest = this.vEmpty + (this.vFull-this.vEmpty)*Math.pow(this.charge,0.85);
@@ -642,7 +651,7 @@ class Quad {
     this.spd=this.vel.length();
     this.vario=this.vel.y;
     this.batt=this.battery.v;
-    this.battPct=this.battery.pct();
+    this.battPct=this.battery.pct(); this.amps=this.battery.I||0;
     this.windSpd=wind.enabled?wind.spd:0;
   }
 }
@@ -1494,7 +1503,7 @@ class World {
   }
 }
 function flash(t,c){ const f=$('flash'); f.textContent=t; f.style.color=c||'#3fe08a'; f.classList.add('on'); clearTimeout(flash._t); flash._t=setTimeout(()=>f.classList.remove('on'),700); }
-class HUD { upd(q,inp){
+class HUD { constructor(){ this._f=new THREE.Vector3(); } upd(q,inp){
   $('hArm').textContent=q.armed?'ARMED':'DISARMED'; $('hArm').className='arm'+(q.armed?' on':'');
   $('hThr').textContent=Math.round(inp.t*100)+'%'; $('hSpd').textContent=Math.round(q.gndSpd*3.6); $('hAlt').textContent=q.alt.toFixed(1);
   const cellV=q.batt/(q.D.cells||6), ve=$('hVolt'); ve.textContent=q.batt.toFixed(1);
@@ -1502,6 +1511,10 @@ class HUD { upd(q,inp){
   $('hMah').textContent=Math.round(q.battery.mah);
   const fm=Math.floor(q.ft/60), fs=Math.floor(q.ft%60); $('hTime').textContent=fm+':'+(fs<10?'0':'')+fs;
   $('hGp').style.display=inp.gpLive?'inline':'none';
+  this._f.set(0,0,-1).applyQuaternion(q.quat);
+  let hd=Math.atan2(this._f.x,-this._f.z)*57.2958; if(hd<0)hd+=360;
+  $('hHdg').textContent=['N','NE','E','SE','S','SW','W','NW'][Math.round(hd/45)%8]+' '+Math.round(hd)+'°';
+  $('hAmp').textContent=Math.round(q.amps||0);
   $('thrFill').style.height=(inp.t*100)+'%';
   $('stkL').style.left=(50+inp.y*40)+'%'; $('stkL').style.top=(50-(inp.t*2-1)*40)+'%';
   $('stkR').style.left=(50+inp.r*40)+'%'; $('stkR').style.top=(50-inp.p*40)+'%';
@@ -1563,18 +1576,32 @@ class Audio {
 }
 class Sim {
   constructor(){ this.inp=new Input(); this.quad=new Quad(); this.quad.setProfile('thezone'); this._loadTune(); this.world=new World(); this.hud=new HUD(); this.audio=new Audio();
-    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; this.race={on:false,i:0,t0:0};
-    this.view={shake:1,con:100,sat:100,dz:6};
+    this.flying=false; this.lt=0; this._gpi=-1; this.setOpen=false; this.calibrating=false; this._pCool=0; this._eggCool=0; this.race={on:false,i:0,t0:0}; this._glitch=0;
+    this.view={shake:1,con:100,sat:100,dz:6,props:1};
     try{ const vv=JSON.parse(localStorage.getItem('fpvview')||'{}');
       if(vv.shake!=null) this.view.shake=vv.shake; if(vv.con) this.view.con=vv.con; if(vv.sat) this.view.sat=vv.sat;
       if(vv.dz!=null){ this.view.dz=vv.dz; this.inp.dz=vv.dz/100; }
       if(vv.tod) this.view.tod=vv.tod;
+      if(vv.props!=null) this.view.props=vv.props;
       if(vv.wind>0){ wind.base=vv.wind; wind.on=true; } }catch(e){}
     this.world.shakeAmt=this.view.shake; this._applyView();
-    if(this.view.tod&&this.view.tod!=='noon') this.world.setTod(this.view.tod); $('hDrone').textContent=QUADS['thezone'].name;
+    if(this.view.tod&&this.view.tod!=='noon') this.world.setTod(this.view.tod);
+    $('tProps').textContent=(this.view.props===0)?'OFF':'ON'; $('hDrone').textContent=QUADS['thezone'].name;
     this._tune(); this._setup(); this._buildUI(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
   _tune(){
-    const bind=(id,vid,fmt,fn)=>{ const s=$(id),v=$(vid); s.oninput=()=>{ fn(+s.value); v.textContent=fmt(+s.value); }; };
+    this._drawRates=()=>{ const cv=$('rateCv'); if(!cv) return;
+      const x=cv.getContext('2d'), W=cv.width, H=cv.height, D=this.quad.D;
+      x.clearRect(0,0,W,H);
+      x.strokeStyle='rgba(127,182,255,0.18)'; x.lineWidth=1;
+      [500,1000,1500].forEach(r2=>{ const yy=H-r2/2000*H; x.beginPath(); x.moveTo(0,yy); x.lineTo(W,yy); x.stroke(); });
+      const rate=(st,maxO)=>{ if(D.useActual) return Math.abs(actualRate(st,D,maxO));
+        const e=D.expo||0, vv=(1-e)*st+e*st*st*st; return Math.abs(vv*(maxO||D.rate)); };
+      const plot=(maxO,col)=>{ x.strokeStyle=col; x.lineWidth=1.6; x.beginPath();
+        for(let i=0;i<=40;i++){ const st=i/40, r2=Math.min(2000,rate(st,maxO));
+          const px=st*W, py=H-r2/2000*H; if(i) x.lineTo(px,py); else x.moveTo(px,py); }
+        x.stroke(); };
+      plot(undefined,'#3fe08a'); plot(D.pitchRate,'#7fd0ff'); plot(D.yawRate,'#ffd84a'); };
+    const bind=(id,vid,fmt,fn)=>{ const s=$(id),v=$(vid); s.oninput=()=>{ fn(+s.value); v.textContent=fmt(+s.value); this._drawRates(); }; };
     this._refreshTune=()=>{ const D=this.quad.D;
       $('tRate').value=D.useActual?D.maxRate:D.rate; $('vRate').textContent=Math.round(D.useActual?D.maxRate:D.rate);
       $('tSnap').value=D.maxAlpha; $('vSnap').textContent=Math.round(D.maxAlpha/1000)+'k';
@@ -1599,7 +1626,8 @@ class Sim {
       const pw=Math.round((D.pwMul==null?1:D.pwMul)*100); $('tPw').value=pw; $('vPw').textContent=pw+'%';
       const ln=Math.round(D.angleMax||50); $('tLean').value=ln; $('vLean').textContent=ln+'°';
       const fo=Math.round(D.fov||120); $('tFov').value=fo; $('vFov').textContent=fo+'°';
-      const dzp=Math.round(this.inp.dz*100); $('tDz').value=dzp; $('vDz').textContent=dzp+'%'; };
+      const dzp=Math.round(this.inp.dz*100); $('tDz').value=dzp; $('vDz').textContent=dzp+'%';
+      this._drawRates(); };
     bind('tRate','vRate',v=>Math.round(v),v=>{const D=this.quad.D; if(D.useActual)D.maxRate=v; D.rate=v;});
     bind('tSnap','vSnap',v=>Math.round(v/1000)+'k',v=>{this.quad.D.maxAlpha=v; this.quad.D.maxAlphaY=Math.round(v*0.4);});
     bind('tPitch','vPitch',v=>Math.round(v),v=>this.quad.D.pitchRate=v);
@@ -1665,10 +1693,17 @@ class Sim {
     fv.set(0,0,-1).applyQuaternion(this.quad.quat);
     const ry=Math.round(Math.atan2(fv.x,-fv.z)/(Math.PI/2))*(Math.PI/2);   // face the pilot, axis-aligned
     if(this.world.addBuildItem(t,pt.x,pt.z,ry)){ this.audio.tone(990,0.06); flash('+ '+t.toUpperCase(),'#3fe08a'); } }
+  _propsFx(q){ const L=$('propL'), Rp=$('propR');
+    if(this.view.props===0){ L.style.opacity=0; Rp.style.opacity=0; return; }
+    this._pr=(this._pr||0)+(q.armed?(8+q.motor*70):0);
+    const vis=Math.max(0,Math.min(1,(q.D.camAngle||20)/38));
+    const op=(q.armed?0.06+0.38*q.motor:0.04)*vis;
+    L.style.opacity=op; Rp.style.opacity=op;
+    L.style.transform='rotate('+this._pr+'deg)'; Rp.style.transform='rotate('+(-this._pr*1.07)+'deg)'; }
   _setTod(t){ this.world.setTod(t); this.view.tod=t; this._saveView();
     flash(t==='dawn'?'🌅 DAWN':t==='dusk'?'🌇 DUSK':'☀ NOON','#ffd84a'); }
   _applyView(){ $('c').style.filter='contrast('+this.view.con+'%) saturate('+this.view.sat+'%)'; }
-  _saveView(){ try{ localStorage.setItem('fpvview', JSON.stringify({shake:this.view.shake,con:this.view.con,sat:this.view.sat,dz:this.view.dz,tod:this.view.tod,wind:wind.on?wind.base:0})); }catch(e){} }
+  _saveView(){ try{ localStorage.setItem('fpvview', JSON.stringify({shake:this.view.shake,con:this.view.con,sat:this.view.sat,dz:this.view.dz,tod:this.view.tod,props:this.view.props,wind:wind.on?wind.base:0})); }catch(e){} }
   _loadTune(){ try{ const t=localStorage.getItem('fpvtune_'+this.quad.id); if(t) Object.assign(this.quad.D, JSON.parse(t)); }catch(e){} }
   _gateGlow(i){ const gs=this.world.raceGates; if(!gs) return; gs.forEach((g,j)=>g.mk.material.opacity=(j===i?0.85:0)); }
   _swapCraft(id){ if(!QUADS[id]||this.quad.id===id) return;
@@ -1722,7 +1757,8 @@ class Sim {
     $('tCal').onclick=()=>{ this._calibrate(()=>{ if(this.setOpen)this._refreshTune(); }); };
     $('calCancel').onclick=()=>this._cancelCal();
     $('mapA').onclick=()=>this._setMap('plains'); $('mapB').onclick=()=>this._setMap('zone'); $('mapC').onclick=()=>this._setMap('factory'); $('mapD').onclick=()=>this._setMap('build');
-    $('todA').onclick=()=>this._setTod('dawn'); $('todB').onclick=()=>this._setTod('noon'); $('todC').onclick=()=>this._setTod('dusk'); }
+    $('todA').onclick=()=>this._setTod('dawn'); $('todB').onclick=()=>this._setTod('noon'); $('todC').onclick=()=>this._setTod('dusk');
+    $('tProps').onclick=()=>{ this.view.props=this.view.props?0:1; $('tProps').textContent=this.view.props?'ON':'OFF'; this._saveView(); }; }
   _calibrate(done){
     const idx=(this.inp.gpi>=0?this.inp.gpi:this._gpi);
     const pads=()=>navigator.getGamepads?navigator.getGamepads():[];
@@ -1831,6 +1867,8 @@ class Sim {
     this.audio.start();   // resume AudioContext on this user gesture
     flash('▶ '+this.quad.D.name,'#3fe08a'); }
   _loop(ts){ requestAnimationFrame(t=>this._loop(t)); const dt=this.lt?Math.min((ts-this.lt)/1000,0.05):0.016; this.lt=ts; wind.upd(dt);
+    this._fpsN=(this._fpsN||0)+1; this._fpsT=(this._fpsT||0)+dt;
+    if(this._fpsT>=0.5){ const e=$('hFps'); if(e) e.textContent=Math.round(this._fpsN/this._fpsT)+'fps'; this._fpsN=0; this._fpsT=0; }
     if(!this.flying){ this.world.render(this.quad); return; }
     if(this.calibrating){ this.world.render(this.quad); return; }
     this.inp.upd(dt, this.quad.D.expo);
@@ -1850,7 +1888,7 @@ class Sim {
     if(this.inp.esc){ this._toMenu(); return; }
     if(this.inp.swap) this._swapCraft(this.inp.swap);
     this.quad.upd(dt,this.inp);
-    if(this.quad.crashed&&!this._wasCrashed){ flash('✸ CRASH — X to level','#ff6048'); this.audio.thud(1); }
+    if(this.quad.crashed&&!this._wasCrashed){ flash('✸ CRASH — X to level','#ff6048'); this.audio.thud(1); this._glitch=0.45; }
     this._wasCrashed=this.quad.crashed;
     if(this._pCool>0) this._pCool-=dt;
     else for(let i=0;i<PORTALS.length;i++){ const p=PORTALS[i], qp=this.quad.pos;
@@ -1874,7 +1912,13 @@ class Sim {
           const nb=!best||tt<best; if(nb) try{ localStorage.setItem('fpvbest',tt); }catch(e){}
           this.audio.tone(1760,0.16,0.15); flash('🏁 '+tt.toFixed(2)+'s'+(nb?' — NEW BEST!':' · best '+best.toFixed(2)+'s'), nb?'#3fe08a':'#ffe04a'); }
         else { this._gateGlow(this.race.i); this.audio.tone(1320,0.07); flash('✓ '+this.race.i+' / 5','#ffe04a'); } } }
-    this.world.render(this.quad); this.hud.upd(this.quad,this.inp);
+    if(this._glitch>0){ this._glitch-=dt;
+      if(this._glitch<=0){ $('c').style.transform=''; $('glitch').style.opacity=0; this._applyView(); }
+      else { const j=this._glitch*16;
+        $('c').style.transform='translate('+((Math.random()-.5)*j)+'px,'+((Math.random()-.5)*j)+'px)';
+        $('c').style.filter='contrast('+(this.view.con+30)+'%) saturate(25%)';
+        $('glitch').style.opacity=Math.min(0.4,this._glitch); } }
+    this.world.render(this.quad); this.hud.upd(this.quad,this.inp); this._propsFx(this.quad);
     this.audio.upd(this.quad.motor, this.quad.armed, this.quad.spd, this.quad.batt, this.quad.D.cells||6);
   }
 }
