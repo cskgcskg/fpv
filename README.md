@@ -2,20 +2,20 @@
 
 A standalone, single-file FPV drone freestyle sim. Three linked worlds, ten craft (including a collective-pitch helicopter), real-physics flight model, and full DJI/gamepad support. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN), so it runs straight from disk or GitHub Pages.
 
-> **Latest:** `trippy-plains-v24.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
+> **Latest:** `trippy-plains-v25.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
 
 ---
 
 ## 🚀 Quick start
 
-1. Double-click `trippy-plains-v24.html` (or serve it from any static host).
+1. Double-click `trippy-plains-v25.html` (or serve it from any static host).
 2. On the setup screen choose **Keyboard**, **Controller** (power it on first — move a stick to wake it) or **Touch** on phones/tablets.
 3. With a controller, run **CALIBRATE STICKS** the first time (see below). It's remembered afterwards.
 4. Hit FLY. The TAB tuning panel opens automatically — press **TAB** to hide it.
 
 > ⚠️ Open the file directly — don't run it inside an embedded preview/iframe, or the browser blocks the Gamepad API.
 >
-> 🍏 **Safari:** Safari only exposes a controller after a **button press** on it — moving the sticks alone won't wake it. Press any button (C1/C2/record on a DJI RC), serve the page over **https** (GitHub Pages is fine), and keep the tab focused. If the controller exposes no buttons at all, Safari never shows it — use Chrome on that machine.
+> 🍏 **Safari:** Safari only exposes a controller after a **button press** on it — moving the sticks alone won't wake it. Press any button (C1/C2/record on a DJI RC), serve the page over **https** (GitHub Pages is fine), and keep the tab focused. The setup screen shows a live count of devices WebKit reports; if it stays at 0 after button presses over https, Safari is not exposing the controller — there is no web API that can fix this, use Chrome/Edge on that machine. (Likewise iPhone web pages cannot drive real haptics — Android only; iOS 17.4+ gets a best-effort light tick.)
 
 ---
 
@@ -141,6 +141,7 @@ Single file + one CDN fetch. On every map load all static opaque meshes are **ba
 | `trippy-plains-v22.html` | **Baked & fast — per-material static-geometry baking on map load (draw calls collapse from ~1500+ to a few dozen in the Ruhrwerk; animated pieces excluded automatically), auto fast-render fallback below 45 fps, per-map hemisphere bounce light (green off grass, tan off dirt, grey off concrete), denser low-sun fog at dawn/dusk for deeper atmospheric layering.** |
 | `trippy-plains-v23.html` | **Mobile & touch — FLY · TOUCH mode with dual thumb-sticks at the bottom of the screen (multi-touch, radius-clamped, sticky throttle, spring-centred right stick), touch button column (ARM/RST/LVL/MAP/TAB/ESC), pinch-zoom/scroll locked, compact HUD layout under 760 px, TAB panel touch-scrollable. Follow-up fixes: pinned ✕ close button in the panel, touch buttons layered above the panel, tap-to-place/erase sandbox building with a 🧹 erase chip.** |
 | `trippy-plains-v24.html` | **Haptics — vibration on crashes, arm/disarm, gates, portals, build taps, touch buttons and the duck (Vibration API on Android/Chrome; gamepad dual-rumble bonus where supported; iOS Safari has no vibration API — on iOS 17.4+ the sim falls back to the native switch-control Taptic tick: a single light tap per event, big events double-tap; older iOS gets nothing). Toggle in FEEL, remembered. Graphics: the quad now casts a soft contact-shadow blob that grows/fades with altitude and slides away from the sun (the landing depth cue), a cool rim/backlight opposite the sun (time-of-day matched) so silhouettes separate from the background, and per-instance hue/lightness variation across all vegetation.** |
+| `trippy-plains-v25.html` | **Grounded light — contact-AO layer: every grounded structure on every map gets a soft baked shadow skirt, built as a single merged mesh (one draw call) from the physics colliders, visually anchoring towers, gates, crates and chimneys to the ground. Per-time-of-day cinematic colour grade composited with your contrast/colour settings (warm sepia dawn, amber dusk). Factory water now lives — scrolling micro-ripples shimmer the settling ponds and cooling channel. Safari controller diagnostics + iOS gesture-context haptic ticks.** |
 
 ---
 

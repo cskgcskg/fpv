@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Trippy Plains v24 — FPV Freestyle</title>
+<title>Trippy Plains v25 — FPV Freestyle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0c1014;font-family:ui-monospace,Menlo,Consolas,monospace;color:#cfe;touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}
@@ -219,7 +219,7 @@ h1{font-size:40px;letter-spacing:10px;font-weight:700;}
 </div>
 <div id="setup">
   <h1>TRIPPY&nbsp;PLAINS</h1>
-  <div class="sub">FPV FREESTYLE · v24 · HAPTICS · LIGHT POLISH</div>
+  <div class="sub">FPV FREESTYLE · v25 · GROUNDED LIGHT</div>
   <div id="gpStatus">Keyboard ready — move a stick to use a controller.</div>
   <div class="row"><button class="btn" id="flyKb">FLY &middot; KEYBOARD</button><button class="btn" id="flyTouch" style="display:none;">FLY &middot; TOUCH</button><button class="btn" id="flyGp" style="display:none;">FLY &middot; CONTROLLER</button><button class="btn sec" id="btnCal" style="display:none;">CALIBRATE STICKS</button></div>
   <div class="hint">W/S throttle &middot; A/D yaw &middot; arrows pitch/roll &middot; SPACE arm &middot; R reset &middot; 1-0 drone &middot; M acro/angle &middot; ESC menu<br>Default quad: THE ZONE (5" freestyle) · N swaps map in flight.</div>
@@ -978,6 +978,7 @@ class World {
     this._buildColliders();
     if(this.tod&&this.tod!=='noon') this._applyTod();
     if(id!=='build') this._bakeStatic();
+    if(id!=='build') this._aoLayer();
   }
   _buildPlains(){
     this.HOLES=HOLES;   // shared with the physics so the floor clamp matches the visual holes
@@ -1389,7 +1390,7 @@ class World {
     this.add(new THREE.BoxGeometry(124,2,16),mDark,32.5,17,330);
     bridge(-20,4,-244, 30,28,-204);                          // conveyor incline up to the silo gallery
     [[-150,-150],[-190,-170]].forEach(([px,pz])=>{           // settling ponds
-      const pond=new THREE.Mesh(new THREE.CircleGeometry(14,24),new THREE.MeshStandardMaterial({color:0x3a4a4e,roughness:0.25,metalness:0.4}));
+      const pond=new THREE.Mesh(new THREE.CircleGeometry(14,24),new THREE.MeshStandardMaterial({color:0x3a4a4e,roughness:0.25,metalness:0.4,bumpMap:this._waterBump(),bumpScale:0.35}));
       pond.rotation.x=-Math.PI/2; pond.position.set(px,0.08,pz); this._root.add(pond);
       this.add(new THREE.BoxGeometry(30,1,1),mConc,px,0.5,pz-15); this.add(new THREE.BoxGeometry(30,1,1),mConc,px,0.5,pz+15);
       this.add(new THREE.BoxGeometry(1,1,30),mConc,px-15,0.5,pz); this.add(new THREE.BoxGeometry(1,1,30),mConc,px+15,0.5,pz); });
@@ -1397,7 +1398,7 @@ class World {
     heap(205,-65,9); heap(250,-110,11);
     this.add(new THREE.BoxGeometry(0.8,1.4,200),mConc,366,0.7,-20);          // cooling-water channel
     this.add(new THREE.BoxGeometry(0.8,1.4,200),mConc,374,0.7,-20);
-    const wat=new THREE.Mesh(new THREE.BoxGeometry(7,0.15,198),new THREE.MeshStandardMaterial({color:0x3f6a72,roughness:0.15,metalness:0.5}));
+    const wat=new THREE.Mesh(new THREE.BoxGeometry(7,0.15,198),new THREE.MeshStandardMaterial({color:0x3f6a72,roughness:0.15,metalness:0.5,bumpMap:this._waterBump(),bumpScale:0.25}));
     wat.position.set(370,0.5,-20); this._root.add(wat);
     // chimney smoke plume (recycled billboards rising off the tallest stack)
     this._smoke=[];
@@ -1515,6 +1516,38 @@ class World {
       for(let i=0;i<placed;i++){ cc.copy(base).offsetHSL((rnd()-0.5)*0.03,(rnd()-0.5)*0.15,(rnd()-0.5)*0.10); im.setColorAt(i,cc); }
       if(im.instanceColor) im.instanceColor.needsUpdate=true; }
     this._root.add(im); }
+  _aoTex(){ if(this._tAO) return this._tAO;
+    const s2=128,cv=document.createElement('canvas');cv.width=cv.height=s2;const x=cv.getContext('2d');
+    const g=x.createRadialGradient(64,64,8,64,64,64);
+    g.addColorStop(0,'rgba(0,0,0,0.34)'); g.addColorStop(0.6,'rgba(0,0,0,0.20)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    x.fillStyle=g; x.fillRect(0,0,s2,s2);
+    this._tAO=new THREE.CanvasTexture(cv); return this._tAO; }
+  _aoLayer(){                       // fake contact ambient-occlusion: every grounded collider gets a soft shadow skirt
+    if(this.mapId==='build') return;
+    const pos=[],uv=[],idx=[]; let n=0;
+    for(let i=0;i<COLLIDERS.length;i++){ const c=COLLIDERS[i];
+      if(c.min.y<-2||c.min.y>0.8) continue;
+      const dx=c.max.x-c.min.x, dz=c.max.z-c.min.z;
+      if(dx*dz<0.3||dx>80||dz>80) continue;
+      const cx=(c.min.x+c.max.x)/2, cz=(c.min.z+c.max.z)/2;
+      const hx=dx/2+0.9, hz=dz/2+0.9, y=0.045+(n%7)*0.004;
+      pos.push(cx-hx,y,cz-hz, cx+hx,y,cz-hz, cx+hx,y,cz+hz, cx-hx,y,cz+hz);
+      uv.push(0,0, 1,0, 1,1, 0,1);
+      const b=n*4; idx.push(b,b+1,b+2, b,b+2,b+3); n++; }
+    if(!n) return;
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+    g.setIndex(idx);
+    const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:this._aoTex(),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+    this._root.add(m); }
+  _waterBump(){ if(this._tWB) return this._tWB;
+    const s2=128,cv=document.createElement('canvas');cv.width=cv.height=s2;const x=cv.getContext('2d');
+    x.fillStyle='#808080';x.fillRect(0,0,s2,s2);
+    for(let i=0;i<700;i++){ const g2=110+Math.random()*40|0; x.fillStyle='rgb('+g2+','+g2+','+g2+')';
+      x.beginPath();x.arc(Math.random()*s2,Math.random()*s2,2+Math.random()*5,0,7);x.fill(); }
+    const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(6,6);
+    return this._tWB=t; }
   _bakeStatic(){               // merge all static opaque meshes per material — massive draw-call win
     if(this.mapId==='build') return;
     this._root.updateMatrixWorld(true);
@@ -1618,6 +1651,7 @@ class World {
     else this.blob.material.opacity=0;
     for(let i=0;i<this.spinners.length;i++) this.spinners[i].rotation.z+=0.012;
     const tnow=performance.now();
+    if(this._tWB){ this._tWB.offset.x=(tnow*0.00004)%1; this._tWB.offset.y=(tnow*0.000028)%1; }
     if(this._flutter&&this._flutter.length){ const ftt=tnow*0.004, wA=0.6+(wind.on?wind.spd*0.08:0);
       for(let i=0;i<this._flutter.length;i++){ const f=this._flutter[i];
         f.rotation.y=(Math.sin(ftt+f.userData.ph)*0.25+Math.sin(ftt*2.3+f.userData.ph)*0.08)*wA; } }
@@ -1744,7 +1778,7 @@ class Sim {
       if(vv.hap!=null) this.view.hap=vv.hap;
       if(vv.wind>0){ wind.base=vv.wind; wind.on=true; } }catch(e){}
     this.world.shakeAmt=this.view.shake; this._applyView();
-    if(this.view.tod&&this.view.tod!=='noon') this.world.setTod(this.view.tod);
+    if(this.view.tod&&this.view.tod!=='noon'){ this.world.setTod(this.view.tod); this._applyView(); }
     $('tProps').textContent=(this.view.props===0)?'OFF':'ON';
     $('tHap').textContent=(this.view.hap===0)?'OFF':'ON'; $('hDrone').textContent=QUADS['thezone'].name;
     this._tune(); this._setup(); this._buildUI(); this._touchInit(); this._craftIcons(); requestAnimationFrame(t=>this._loop(t)); }
@@ -1834,6 +1868,8 @@ class Sim {
     const q=n=>{ this.inp._q[n]=true; this._buzz(8); };
     $('tbArm').onclick=()=>q('arm'); $('tbRst').onclick=()=>q('reset'); $('tbLvl').onclick=()=>q('levelNow');
     $('tbMap').onclick=()=>q('nextMap'); $('tbTab').onclick=()=>q('toggleSet'); $('tbEsc').onclick=()=>q('esc');
+    ['tbArm','tbRst','tbLvl','tbMap','tbTab','tbEsc'].forEach(id=>{ const el=$(id);
+      el.addEventListener('touchstart',()=>{ if(this.view&&this.view.hap!==0&&this._iosSw){ try{ this._iosSw.click(); }catch(e){} } },{passive:true}); });
   }
   _tsSetup(){
     if(this._tsReady) return; this._tsReady=true;
@@ -1917,9 +1953,12 @@ class Sim {
     const op=(q.armed?0.06+0.38*q.motor:0.04)*vis;
     L.style.opacity=op; Rp.style.opacity=op;
     L.style.transform='rotate('+this._pr+'deg)'; Rp.style.transform='rotate('+(-this._pr*1.07)+'deg)'; }
-  _setTod(t){ this.world.setTod(t); this.view.tod=t; this._saveView();
+  _setTod(t){ this.world.setTod(t); this.view.tod=t; this._applyView(); this._saveView();
     flash(t==='dawn'?'🌅 DAWN':t==='dusk'?'🌇 DUSK':'☀ NOON','#ffd84a'); }
-  _applyView(){ $('c').style.filter='contrast('+this.view.con+'%) saturate('+this.view.sat+'%)'; }
+  _applyView(){ const td=this.world?this.world.tod:null;
+    const grade=td==='dawn'?' sepia(14%) hue-rotate(-8deg) brightness(1.02)'
+              :td==='dusk'?' sepia(10%) hue-rotate(8deg) saturate(108%)':'';
+    $('c').style.filter='contrast('+this.view.con+'%) saturate('+this.view.sat+'%)'+grade; }
   _saveView(){ try{ localStorage.setItem('fpvview', JSON.stringify({shake:this.view.shake,con:this.view.con,sat:this.view.sat,dz:this.view.dz,tod:this.view.tod,props:this.view.props,hap:this.view.hap,wind:wind.on?wind.base:0})); }catch(e){} }
   _loadTune(){ try{ const t=localStorage.getItem('fpvtune_'+this.quad.id); if(t) Object.assign(this.quad.D, JSON.parse(t)); }catch(e){} }
   _gateGlow(i){ const gs=this.world.raceGates; if(!gs) return; gs.forEach((g,j)=>g.mk.material.opacity=(j===i?0.85:0)); }
@@ -1965,8 +2004,10 @@ class Sim {
   _setup(){ const scan=()=>{ const pads=getPads(); let idx=-1; for(let i=0;i<pads.length;i++) if(pads[i]){idx=i;break;}
       this._gpi=idx; const on=idx>=0;
       $('flyGp').style.display=on?'inline-block':'none'; $('btnCal').style.display=on?'inline-block':'none';
-      if(!on){ $('gpStatus').innerHTML='Keyboard ready — move a stick to use a controller.'
-        +(IS_SAFARI?'<br><span style="color:#ffb04a">Safari: press a BUTTON on the controller — stick movement alone won\'t wake it here.<br>Serve over https; if it never shows, Safari isn\'t exposing this controller (Chrome works).</span>':''); }
+      if(!on){ const cnt=getPads().filter(Boolean).length;
+        $('gpStatus').innerHTML='Keyboard ready — move a stick to use a controller.'
+        +(IS_SAFARI?'<br><span style="color:#ffb04a">Safari: press a BUTTON on the controller — stick movement alone won\'t wake it.</span>'
+          +'<br><span style="color:#7a93a8">WebKit currently reports '+cnt+' device(s). If this stays 0 after button presses over https, Safari is not exposing this controller — that cannot be fixed from a web page. Chrome / Edge work.</span>':''); }
       else if(this._hasCal()){ $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#3fe08a">Calibration remembered — just hit FLY (or re-calibrate).</span>'; $('btnCal').textContent='RE-CALIBRATE'; }
       else { $('gpStatus').innerHTML='<b>✓ '+pads[idx].id.slice(0,32)+'</b><br><span style="color:#ffb04a">Not calibrated yet — calibrate sticks (recommended).</span>'; $('btnCal').textContent='CALIBRATE STICKS'; } };
     this._si=setInterval(scan,300); scan(); this._scanFn=scan;
