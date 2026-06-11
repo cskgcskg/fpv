@@ -1,14 +1,14 @@
 # 🌀 Trippy Plains — FPV Freestyle Sim
 
-A standalone, single-file FPV drone freestyle sim. Three linked worlds, eight craft (including a collective-pitch helicopter), real-physics flight model, and full DJI/gamepad support. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN), so it runs straight from disk or GitHub Pages.
+A standalone, single-file FPV drone freestyle sim. Three linked worlds, ten craft (including a collective-pitch helicopter), real-physics flight model, and full DJI/gamepad support. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN), so it runs straight from disk or GitHub Pages.
 
-> **Latest:** `trippy-plains-v12.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
+> **Latest:** `trippy-plains-v19.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
 
 ---
 
 ## 🚀 Quick start
 
-1. Double-click `trippy-plains-v12.html` (or serve it from any static host).
+1. Double-click `trippy-plains-v19.html` (or serve it from any static host).
 2. On the setup screen choose **Keyboard** or **Controller** (power on your gamepad first — move a stick to wake it).
 3. With a controller, run **CALIBRATE STICKS** the first time (see below). It's remembered afterwards.
 4. Hit FLY. The TAB tuning panel opens automatically — press **TAB** to hide it.
@@ -29,14 +29,16 @@ A standalone, single-file FPV drone freestyle sim. Three linked worlds, eight cr
 | `R` | Reset to spawn |
 | `X` | Level / recover |
 | `M` | Acro ↔ Angle mode |
-| `1` – `8` | Swap craft (see icons in the legend) |
+| `1` – `0` | Swap craft (or click the CRAFT row in TAB) |
 | `N` | Next map |
 | `Q` | Fast render ↔ full quality |
+| `G` | Gate run — timed 5-gate slalom (Zone Field) |
+| `V` | Wind on / off |
 | `[` / `]` | Camera angle down / up |
 | `TAB` | Controls & tuning panel (open by default) |
 | `ESC` | Back to the start screen |
 
-The bottom-right legend shows numbered mini-icons for all eight craft — the active one is lit green.
+The bottom-right legend shows numbered mini-icons for all ten craft — the active one is lit green. The same row appears in TAB as clickable buttons.
 
 **Input is self-healing:** in keyboard mode the controller takes over the moment you move a stick (🎮 flash + HUD icon); if the pad naps or its index drifts mid-flight, it re-acquires automatically or falls back to keyboard.
 
@@ -54,18 +56,22 @@ The bottom-right legend shows numbered mini-icons for all eight craft — the ac
 | 6 | LONGRANGE 7 | 7" — floaty, carries speed forever |
 | 7 | HELI CP | Collective-pitch heli: governor headspeed, signed collective, hovers ~62 % stick, flies inverted |
 | 8 | MASTER 3.5 | 3.5" freestyle, Master-3X class: 365 g on 4S, nimble & punchy |
+| 9 | TINY 65 | 65 mm 1S whoop — parachute drag, heavy sag, ~40 km/h indoor dancer |
+| 0 | LIFTER X8 | 8" cinelifter — 1.9 kg camera mule, slow to spool, plan ahead, ~117 km/h |
 
 ---
 
-## 🗺️ Three worlds, linked by portals
+## 🗺️ Four worlds, linked by portals
 
-Every map has two glowing **portal gates** near spawn (pulsing ring, halo, 150 m sky beam; colour = destination). Fly through the hoop and you emerge at the matching gate in the next world — speed, attitude, arm state, battery and timer all carry over. Approach corridors are kept clear of equipment. `N` or TAB → MAP also switches directly. The sim always boots into Trippy Plains.
+Every map has three glowing **portal gates** near spawn (pulsing ring, halo, 150 m sky beam; colour = destination). Fly through the hoop and you emerge at the matching gate in the next world — speed, attitude, arm state, battery and timer all carry over. Approach corridors are kept clear of equipment. `N` or TAB → MAP also switches directly. The sim always boots into Trippy Plains.
 
 **🌀 Trippy Plains** — open-field freestyle: scaffolds, helixes, tables, gates and pennants in three size tiers, curving square tunnels, bent holey pipes, torus rings, floating sky equipment, surfable dirt mounds, and two floor portals down to a mirrored underground "Inception" level.
 
-**⛰ Zone Field** — grass-and-dirt practice field: dirt-jump cluster (surfable), scaffold towers, slalom gates, octagonal hoops, containers, grind rails, power lines, trees.
+**⛰ Zone Field** — grass-and-dirt practice field: dirt-jump cluster (surfable), scaffold towers, slalom gates, octagonal hoops, containers, grind rails, power lines, trees — plus a 6-arch race loop, ladder gates, limbo hurdles, two dive towers, a 7-pole slalom, a wall-ride corridor and a power-loop tower.
 
 **🏭 Ruhrwerk** — massive abandoned West-German industrial complex: a dozen brick chimneys (three square ones with diveable hollow cores), seven empty warehouses with door/roof gaps, conveyor truss bridges, three cranes, tank farms, silo batteries, rail spur with hopper wagons, transmission pylons, pipe racks, blast furnace, flare stack, coke-oven battery, settling ponds, scrap yard, cooling-water channel, an open pit with two turning bucket-wheel excavators and surfable slag heaps — plus **THE BLOCK**: a 10-storey empty shell with window bands and holed floors, stamped three times, and three 3×-scale **MEGA BLOCKS** with a full-height drop shaft and a horizontal gap straight through the middle.
+
+**▦ Sandbox** — an empty grid world that *you* build while flying: open TAB and drag chips (box, wall, gate, hoop, arch, tower, surfable mound, pole) onto the world — or click a chip, then click the ground. Objects face you, snap to axis alignment, and collide for real. Right-click an object to remove it, CLEAR SANDBOX wipes it, and the layout auto-saves to the browser.
 
 > 🥚 *A golden duck nests somewhere industrial. Touch it.*
 
@@ -87,7 +93,7 @@ Everything (axes, inversions, button bindings) is saved to the browser and reloa
 
 Open by default in flight; TAB toggles it. Live tuning synced to the active craft:
 
-**Snappiness** — Rate (°/s, up to 2000), Snap (accel limit, up to 320k), **Pitch rate** (180–2000 °/s — pitch-axis override for very fast flips; pitch snap auto-scales). **Flight · Physics** — Power (TWR), mass/inertia, throttle response, gravity, expo. **Rate PID** — P, I, D. **Camera** — angle. **Sound** — motor volume. **Scene** — floor/background brightness. **Map** — Plains / Zone Field / Factory buttons. **Controller** — calibrate sticks.
+**Craft** — clickable picker for all ten machines. **Snappiness** — Rate (up to 2000 °/s), Snap (up to 320k), **Pitch rate** and **Yaw rate** per-axis overrides. **Flight · Physics** — Power (TWR), mass/inertia, throttle response, gravity, expo, **drag %, propwash %, angle-mode lean**. **Rate PID** — P, I, D. **Camera** — angle + FoV. **Feel · Wind** — cam-shake amount (0 = off) and wind speed (0 = off), both remembered. **Sound** — motor volume. **Scene** — floor/background brightness, contrast and colour saturation, **time of day (DAWN / NOON / DUSK — remembered)**. **Build** — sandbox object palette (drag-drop or click-place, right-click remove, CLEAR). **Map** — Plains / Zone Field / Factory / Sandbox buttons. **Controller** — stick deadzone (remembered) + calibrate sticks.
 
 ---
 
@@ -120,6 +126,12 @@ Single file + one CDN fetch. Repeated towers share cached geometries; switching 
 | `trippy-plains-v10.html` | Best of Zone merged in; calibration v2; 7" + heli; in-flight multimap. |
 | `trippy-plains-v11.html` | Beacon portals with clean corridors; Ruhrwerk built & densified (3 waves); THE BLOCK + MEGA BLOCKS; golden duck; ESC menu; craft icons; Q toggle; self-healing input. |
 | `trippy-plains-v12.html` | **Pitch-rate slider (180–2000 °/s) + extended Rate/Snap ranges; gradient sky domes, per-map sun colour, vignette; 8th craft (3.5" Master-3X class).** |
+| `trippy-plains-v13.html` | **Pro pack — Feel: camera micro-shake from propwash/motors/airspeed, crash thud, speed-scaled wind whoosh, low-battery beeper. Turtle mode (full stick flips an upside-down quad). `G` gate run: timed 5-gate slalom in Zone Field with glowing next-gate marker + best time saved. Tune presets (SAVE/LOAD/DEFAULT per craft, auto-loaded on swap). OSD: voltage colour-coded by cell health + mAh-used tile.** |
+| `trippy-plains-v14.html` | **Feel controls: cam-shake and wind sliders in TAB (0 = off, persisted; `V` toggle wired up). Scene contrast + colour-saturation sliders (persisted). Zone Field race/freestyle expansion: 6-arch race loop, ladder gates, limbo hurdles, dive towers, pole slalom, wall-ride corridor, power-loop tower.** |
+| `trippy-plains-v16.html` | **SANDBOX — 4th map: empty grid world, buildable in flight from a TAB palette (drag-drop / click-place, right-click remove, auto-saved layout, real colliders incl. surfable mounds). Portals now 3 per map. Feel polish: arm/disarm + gate + portal + build tones, subtle speed-FOV kick.** |
+| `trippy-plains-v17.html` | **Pro tuning: panel widened (no horizontal scroll), clickable CRAFT picker in TAB, new sliders — yaw rate, drag %, propwash %, angle-mode lean, FoV, stick deadzone (persisted) — all covered by tune presets. Two new craft: TINY 65 (1S whoop) and LIFTER X8 (8" cinelifter), drag-validated to real top speeds.** |
+| `trippy-plains-v18.html` | **Realism graphics pass — bump-mapped grounds with max-anisotropy filtering (sharp at FPV grazing angles), richer procedural surfaces (tire tracks & scuffs on the plains, mow stripes & dirt patches on the zone grass, oil stains & faded lane lines on the factory concrete), painted-sun sky domes with horizon haze and high streak clouds, soft billboard clouds replacing the old blobs, ~11k instanced grass/scrub/weed tufts per map (one draw call), per-tree foliage colour variation, tighter shadow frustum + normal-bias for crisper contact shadows.** |
+| `trippy-plains-v19.html` | **Light & surface pass — time-of-day system (DAWN / NOON / DUSK buttons: low warm sun with long shadows, repainted sky, matched fog & hemisphere light, persisted). Procedural wall materials: brick with soot streaks on chimneys & coke ovens, corrugated cladding with rust runs & bolt rows on warehouses, panel-lined stained concrete on towers, neutral grime maps tinting containers/gates/cranes. Prop dust kicks up when hovering low at throttle.** |
 
 ---
 
