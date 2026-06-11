@@ -2,13 +2,13 @@
 
 A standalone, single-file FPV drone freestyle sim. Three linked worlds, ten craft (including a collective-pitch helicopter), real-physics flight model, and full DJI/gamepad support. Everything lives in one `.html` file — no build, no installs, no external assets (Three.js loads from a CDN), so it runs straight from disk or GitHub Pages.
 
-> **Latest:** `trippy-plains-v25.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
+> **Latest:** `trippy-plains-v28.html` — double-click to open in a desktop browser (Chrome recommended) and fly.
 
 ---
 
 ## 🚀 Quick start
 
-1. Double-click `trippy-plains-v25.html` (or serve it from any static host).
+1. Double-click `trippy-plains-v28.html` (or serve it from any static host).
 2. On the setup screen choose **Keyboard**, **Controller** (power it on first — move a stick to wake it) or **Touch** on phones/tablets.
 3. With a controller, run **CALIBRATE STICKS** the first time (see below). It's remembered afterwards.
 4. Hit FLY. The TAB tuning panel opens automatically — press **TAB** to hide it.
@@ -65,15 +65,17 @@ The bottom-right legend shows numbered mini-icons for all ten craft — the acti
 
 ---
 
-## 🗺️ Four worlds, linked by portals
+## 🗺️ Five worlds, linked by portals
 
-Every map has three glowing **portal gates** near spawn (pulsing ring, halo, 150 m sky beam; colour = destination). Fly through the hoop and you emerge at the matching gate in the next world — speed, attitude, arm state, battery and timer all carry over. Approach corridors are kept clear of equipment. `N` or TAB → MAP also switches directly. The sim always boots into Trippy Plains.
+Every map has four glowing **portal gates** near spawn (pulsing ring, halo, 150 m sky beam; colour = destination). Fly through the hoop and you emerge at the matching gate in the next world — speed, attitude, arm state, battery and timer all carry over. Approach corridors are kept clear of equipment. `N` or TAB → MAP also switches directly. The sim always boots into Trippy Plains.
 
 **🌀 Trippy Plains** — open-field freestyle: scaffolds, helixes, tables, gates and pennants in three size tiers, curving square tunnels, bent holey pipes, torus rings, floating sky equipment, surfable dirt mounds, and two floor portals down to a mirrored underground "Inception" level.
 
 **⛰ Zone Field** — grass-and-dirt practice field: dirt-jump cluster (surfable), scaffold towers, slalom gates, octagonal hoops, containers, grind rails, power lines, trees — plus a 6-arch race loop, ladder gates, limbo hurdles, two dive towers, a 7-pole slalom, a wall-ride corridor and a power-loop tower.
 
 **🏭 Ruhrwerk** — massive abandoned West-German industrial complex: a dozen brick chimneys (three square ones with diveable hollow cores), seven empty warehouses with door/roof gaps, conveyor truss bridges, three cranes, tank farms, silo batteries, rail spur with hopper wagons, transmission pylons, pipe racks, blast furnace, flare stack, coke-oven battery, settling ponds, scrap yard, cooling-water channel, an open pit with two turning bucket-wheel excavators and surfable slag heaps — plus **THE BLOCK**: a 10-storey empty shell with window bands and holed floors, stamped three times, and three 3×-scale **MEGA BLOCKS** with a full-height drop shaft and a horizontal gap straight through the middle.
+
+**🏚 Bando Resort** — a sun-bleached abandoned resort: THE GRAND, a 96 m gutted hotel slab with a mullion window grid, scattered floor holes, a double-height lobby void and a rooftop sign frame, plus a five-storey wing joined by a truss sky bridge; an empty tiled swimming pool with diving board and a dead water slide; a dry fountain, tennis court, cabana row, cracked parking lot with five car wrecks, surfable rubble piles, and fourteen leaning palms over dry overgrown grounds.
 
 **▦ Sandbox** — an empty grid world that *you* build while flying: open TAB and drag chips (box, wall, gate, hoop, arch, tower, surfable mound, pole) onto the world — or click a chip, then click the ground. Objects face you, snap to axis alignment, and collide for real. Right-click an object to remove it, CLEAR SANDBOX wipes it, and the layout auto-saves to the browser.
 
@@ -97,7 +99,7 @@ Everything (axes, inversions, button bindings) is saved to the browser and reloa
 
 Open by default in flight; TAB toggles it. Live tuning synced to the active craft:
 
-**Craft** — clickable picker for all ten machines. **Snappiness** — Rate (up to 2000 °/s), Snap (up to 320k), **Pitch rate** and **Yaw rate** per-axis overrides. **Flight · Physics** — Power (TWR), mass/inertia, throttle response, gravity, expo, **drag %, propwash %, angle-mode lean**. **Rate PID** — P, I, D. **Camera** — angle + FoV. **Feel · Wind** — cam-shake amount (0 = off), wind speed (0 = off), props-in-view and **haptics** toggles, all remembered. **Sound** — motor volume. **Scene** — floor/background brightness, contrast and colour saturation, **time of day (DAWN / NOON / DUSK — remembered)**. **Build** — sandbox object palette (drag-drop or click-place, right-click remove, CLEAR). **Map** — Plains / Zone Field / Factory / Sandbox buttons. **Controller** — stick deadzone (remembered) + calibrate sticks.
+**Craft** — clickable picker for all ten machines. **Snappiness** — Rate (up to 2000 °/s), Snap (up to 320k), **Pitch rate** and **Yaw rate** per-axis overrides. **Flight · Physics** — Power (TWR), mass/inertia, throttle response, gravity, expo, **drag %, propwash %, angle-mode lean**. **Rate PID** — P, I, D. **Camera** — angle + FoV. **Feel · Wind** — cam-shake amount (0 = off), wind speed (0 = off), props-in-view and **haptics** toggles, all remembered. **Sound** — motor volume. **Scene** — floor/background brightness, contrast and colour saturation, **time of day (DAWN / NOON / DUSK / NIGHT — remembered)**. **Build** — sandbox object palette (drag-drop or click-place, right-click remove, CLEAR). **Map** — Plains / Zone Field / Factory / Sandbox buttons. **Controller** — stick deadzone (remembered) + calibrate sticks.
 
 ---
 
@@ -142,6 +144,9 @@ Single file + one CDN fetch. On every map load all static opaque meshes are **ba
 | `trippy-plains-v23.html` | **Mobile & touch — FLY · TOUCH mode with dual thumb-sticks at the bottom of the screen (multi-touch, radius-clamped, sticky throttle, spring-centred right stick), touch button column (ARM/RST/LVL/MAP/TAB/ESC), pinch-zoom/scroll locked, compact HUD layout under 760 px, TAB panel touch-scrollable. Follow-up fixes: pinned ✕ close button in the panel, touch buttons layered above the panel, tap-to-place/erase sandbox building with a 🧹 erase chip.** |
 | `trippy-plains-v24.html` | **Haptics — vibration on crashes, arm/disarm, gates, portals, build taps, touch buttons and the duck (Vibration API on Android/Chrome; gamepad dual-rumble bonus where supported; iOS Safari has no vibration API — on iOS 17.4+ the sim falls back to the native switch-control Taptic tick: a single light tap per event, big events double-tap; older iOS gets nothing). Toggle in FEEL, remembered. Graphics: the quad now casts a soft contact-shadow blob that grows/fades with altitude and slides away from the sun (the landing depth cue), a cool rim/backlight opposite the sun (time-of-day matched) so silhouettes separate from the background, and per-instance hue/lightness variation across all vegetation.** |
 | `trippy-plains-v25.html` | **Grounded light — contact-AO layer: every grounded structure on every map gets a soft baked shadow skirt, built as a single merged mesh (one draw call) from the physics colliders, visually anchoring towers, gates, crates and chimneys to the ground. Per-time-of-day cinematic colour grade composited with your contrast/colour settings (warm sepia dawn, amber dusk). Factory water now lives — scrolling micro-ripples shimmer the settling ponds and cooling channel. Safari controller diagnostics + iOS gesture-context haptic ticks.** |
+| `trippy-plains-v26.html` | **Night & light shafts — 4th time of day: 🌙 NIGHT with moonlight, 700 stars + glowing moon, deep navy fog, dimmed bounce light and a muted colour grade; everything emissive (portal gates, sky beams, holey pipes, the duck's beacon) finally pops. Dawn/dusk god-ray cards slice between the factory buildings, aligned to the sun. The flare stack now carries a real flickering point light that dominates at night.** |
+| `trippy-plains-v27.html` | **Materials & cinema — the Plains finally wears real surfaces: wavy-grain plank wood with knots on crates/box stands, weathered grime on frames and rust, woven tarp on tables; ten gnarled dead trees for dawn/dusk silhouettes (mirrored underground too). Lens dirt that only reveals itself in backlight, riding the sun flare like a real FPV cam. Clouds now drift slowly across the sky; the vignette deepens with airspeed; and animated windsocks on Plains & Zone Field point, lift and flutter with the actual wind state.** |
+| `trippy-plains-v28.html` | **BANDO RESORT — 5th world: gutted hotel slab + wing with sky bridge, empty pool, dead slide, fountain, tennis court, cabanas, car wrecks, rubble, leaning palms, lush-dry overgrowth — in the full graphics stack (textures, AO skirts, TOD, bake). Portals now 4 per map with widened clean corridors.** |
 
 ---
 
